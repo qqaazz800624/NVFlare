@@ -1,6 +1,6 @@
 {
-  "data_root": "/work/pancreas/nvidia-tlt/scripts/condist_fl/data/Spleen",
-  "data_list": "/work/pancreas/nvidia-tlt/scripts/condist_fl/data/Spleen/datalist.json",
+  "data_root": "/neodata/open_dataset/ConDistFL/data/Spleen",
+  "data_list": "/neodata/open_dataset/ConDistFL/data/Spleen/datalist.json",
 
   "num_samples": 2,
 
