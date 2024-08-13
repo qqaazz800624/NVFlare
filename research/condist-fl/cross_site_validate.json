@@ -1,0 +1,52 @@
+{
+    "app_kidney": {
+        "val_meandice": 0.7647539398499897,
+        "val_meandice_kidney": 0.9510345458984375,
+        "val_meandice_kidney_tumor": 0.8224835991859436,
+        "val_meandice_liver": 0.95980304479599,
+        "val_meandice_liver_tumor": 0.6374996900558472,
+        "val_meandice_pancreas": 0.785324215888977,
+        "val_meandice_pancreas_tumor": 0.24146606028079987,
+        "val_meandice_spleen": 0.9556664228439331
+    },
+    "app_liver": {
+        "val_meandice": 0.7777415343693325,
+        "val_meandice_kidney": 0.9452493786811829,
+        "val_meandice_kidney_tumor": 0.7380182147026062,
+        "val_meandice_liver": 0.9607877135276794,
+        "val_meandice_liver_tumor": 0.7139236330986023,
+        "val_meandice_pancreas": 0.7838298678398132,
+        "val_meandice_pancreas_tumor": 0.34263014793395996,
+        "val_meandice_spleen": 0.9597517848014832
+    },
+    "app_pancreas": {
+        "val_meandice": 0.6651607427213874,
+        "val_meandice_kidney": 0.9251440167427063,
+        "val_meandice_kidney_tumor": 0.05855761095881462,
+        "val_meandice_liver": 0.9430624842643738,
+        "val_meandice_liver_tumor": 0.5723865628242493,
+        "val_meandice_pancreas": 0.7583917379379272,
+        "val_meandice_pancreas_tumor": 0.4488537013530731,
+        "val_meandice_spleen": 0.9497290849685669
+    },
+    "app_server": {
+        "val_meandice": 0.794238920722689,
+        "val_meandice_kidney": 0.9496393799781799,
+        "val_meandice_kidney_tumor": 0.8125779032707214,
+        "val_meandice_liver": 0.9607992768287659,
+        "val_meandice_liver_tumor": 0.6930482983589172,
+        "val_meandice_pancreas": 0.7821835279464722,
+        "val_meandice_pancreas_tumor": 0.4002430737018585,
+        "val_meandice_spleen": 0.9611809849739075
+    },
+    "app_spleen": {
+        "val_meandice": 0.7912850337369102,
+        "val_meandice_kidney": 0.9501862525939941,
+        "val_meandice_kidney_tumor": 0.803954541683197,
+        "val_meandice_liver": 0.9609833359718323,
+        "val_meandice_liver_tumor": 0.6866240501403809,
+        "val_meandice_pancreas": 0.7834814786911011,
+        "val_meandice_pancreas_tumor": 0.3925204575061798,
+        "val_meandice_spleen": 0.9612451195716858
+    }
+}
