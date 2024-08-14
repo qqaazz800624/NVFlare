@@ -1,13 +1,11 @@
 #%%
 
-import json
+total = dict()
+total['a'] = 1
+total['b'] = 2
 
-json_path = '/data2/open_dataset/MSD/Task03_Liver/dataset.json'
 
-with open(json_path, 'r') as f:
-    liver = json.load(f)
-
-liver
+total.get('c') is None
 
 #%%
 
