@@ -35,7 +35,7 @@
     },
     {
       "id": "shareable_generator",
-      "name": "general_adjust_shareable_generator.GeneralizationAdjustmentShareableGenerator",
+      "name": "PTFedOptModelShareableGenerator",
       "args": {
         "device": "cpu",
         "source_model": "model",
@@ -61,14 +61,8 @@
       "id": "aggregator",
       "name": "general_adjust_aggregator.GeneralizationAdjustmentAggregator",
       "args": {
-        "exclude_vars": null,
-        "aggregation_weights": {
-          "liver": 1.0,
-          "spleen": 1.0,
-          "pancreas": 1.0,
-          "kidney": 1.0
-        },
-        "expected_data_kind": "WEIGHT_DIFF"
+        "step_size": 0.2,
+        "fair_metric": "loss"
       }
     },
     {
