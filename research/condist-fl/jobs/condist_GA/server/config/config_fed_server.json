@@ -35,34 +35,21 @@
     },
     {
       "id": "shareable_generator",
-      "name": "PTFedOptModelShareableGenerator",
-      "args": {
-        "device": "cpu",
-        "source_model": "model",
-        "optimizer_args": {
-          "path": "torch.optim.SGD",
-          "args": {
-            "lr": 1.0,
-            "momentum": 0.6
-          },
-          "config_type": "dict"
-        },
-        "lr_scheduler_args": {
-          "path": "torch.optim.lr_scheduler.CosineAnnealingLR",
-          "args": {
-            "T_max": "{num_rounds}",
-            "eta_min": 0.9
-          },
-          "config_type": "dict"
-        }
-      }
+      "name": "FullModelShareableGenerator",
+      "args": {}
     },
     {
       "id": "aggregator",
-      "name": "general_adjust_aggregator.GeneralizationAdjustmentAggregator",
+      "name": "InTimeAccumulateWeightedAggregator",
       "args": {
-        "step_size": 0.2,
-        "fair_metric": "loss"
+        "exclude_vars": null,
+        "aggregation_weights": {
+          "liver": 1.0,
+          "spleen": 1.0,
+          "pancreas": 1.0,
+          "kidney": 1.0
+        },
+        "expected_data_kind": "WEIGHTS"
       }
     },
     {
