@@ -165,7 +165,7 @@ class ConDistLearner(Learner):
         self.trainer.save_checkpoint(self.last_model_path, self.model)
 
         # Calculate weight diff
-        local_weights = extract_weights(self.model)
+        #local_weights = extract_weights(self.model)
         # weight_diff = {}
         # for var_name in local_weights:
         #     weight_diff[var_name] = local_weights[var_name] - global_weights[var_name]
@@ -173,6 +173,8 @@ class ConDistLearner(Learner):
         #         self.system_panic(f"{var_name} weights became NaN...", fl_ctx)
         #         return make_reply(ReturnCode.EXECUTION_EXCEPTION)
 
+        # Calculate weights instead of weight diff
+        local_weights = extract_weights(self.model)
         weights = {}
         for var_name in local_weights:
             weights[var_name] = local_weights[var_name]
