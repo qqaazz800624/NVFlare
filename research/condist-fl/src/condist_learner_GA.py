@@ -166,12 +166,12 @@ class ConDistLearner(Learner):
 
         # Calculate weight diff
         local_weights = extract_weights(self.model)
-        weight_diff = {}
-        for var_name in local_weights:
-            weight_diff[var_name] = local_weights[var_name] - global_weights[var_name]
-            if np.any(np.isnan(weight_diff[var_name])):
-                self.system_panic(f"{var_name} weights became NaN...", fl_ctx)
-                return make_reply(ReturnCode.EXECUTION_EXCEPTION)
+        # weight_diff = {}
+        # for var_name in local_weights:
+        #     weight_diff[var_name] = local_weights[var_name] - global_weights[var_name]
+        #     if np.any(np.isnan(weight_diff[var_name])):
+        #         self.system_panic(f"{var_name} weights became NaN...", fl_ctx)
+        #         return make_reply(ReturnCode.EXECUTION_EXCEPTION)
 
         weights = {}
         for var_name in local_weights:
