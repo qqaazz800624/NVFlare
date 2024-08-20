@@ -1,13 +1,15 @@
 from nvflare.app_common.abstract.aggregator import Aggregator
 from nvflare.apis.dxo import from_shareable, DataKind, DXO
 from nvflare.apis.fl_context import FLContext
+from nvflare.apis.shareable import Shareable
 from nvflare.apis.fl_constant import ReservedKey
 from typing import Dict, Union
 import numpy as np
 from fed_merge import FedAvg
+from nvflare.app_common.app_constant import AppConstants
 
 class GeneralizationAdjustmentAggregator(Aggregator):
-    def __init__(self, step_size: float = 0.1, exclude_vars: str = None, fair_metric: str = 'loss'):
+    def __init__(self, step_size: float = 0.5, exclude_vars: str = None, fair_metric: str = 'loss'):
         """Initialize the Generalization Adjustment Aggregator.
 
         Args:
@@ -47,7 +49,7 @@ class GeneralizationAdjustmentAggregator(Aggregator):
         self.log_info(fl_ctx, f"Accepted weights and generalization gap from client: {client_name}")
 
 
-    def refine_weight_dict_by_GA(self):
+    def refine_weight_dict_by_GA(self, fl_ctx: FLContext):
         """Adjust weights based on the generalization gaps and fairness metric."""
         if self.fair_metric == 'acc':
             signal = -1.0  # To adjust based on accuracy
@@ -55,20 +57,33 @@ class GeneralizationAdjustmentAggregator(Aggregator):
             signal = 1.0  # To adjust based on loss
         else:
             raise ValueError('fair_metric must be acc or loss')
+        
+        # Retrieve the current round and total number of rounds
+        current_round = fl_ctx.get_prop(AppConstants.CURRENT_ROUND, default=1)
+        num_rounds = fl_ctx.get_prop(AppConstants.NUM_ROUNDS, default=120)
+        self.log_info(fl_ctx, f"Current Round: {current_round}, Total Rounds: {num_rounds}")
 
         # Calculate value_list as the generalization gap received from clients
         value_list = np.array([self.generalization_gaps[site_name] for site_name in self.generalization_gaps.keys()])
 
+        # Compute the mean of the generalization gaps
+        mean_generalization_gap = np.mean(value_list)
+        self.log_info(fl_ctx, f"Mean Generalization Gap: {mean_generalization_gap}")
+
+        centralized_value_list = value_list - mean_generalization_gap
+
         # Avoid division by zero if all generalization gaps are the same
-        max_abs_value = np.max(np.abs(value_list))
+        max_abs_value = np.max(np.abs(centralized_value_list))
+
         if max_abs_value == 0:
-            norm_gap_list = np.zeros_like(value_list)
+            norm_gap_list = np.zeros_like(centralized_value_list)
         else:
             # Normalize the gap list
-            norm_gap_list = value_list / max_abs_value
+            norm_gap_list = centralized_value_list / max_abs_value
 
         # Adjust weights for each site
-        step_size_adjusted = self.step_size / 3.0  # Adjust step size
+        step_size_adjusted = (1-(current_round/num_rounds))*self.step_size   # Adjust step size
+
         for i, site_name in enumerate(self.weight_dict.keys()):
             self.weight_dict[site_name] += signal * norm_gap_list[i] * step_size_adjusted
 
@@ -93,7 +108,7 @@ class GeneralizationAdjustmentAggregator(Aggregator):
         """Perform the Generalization Adjustment and aggregate the model updates."""
         
         # Adjust weights based on generalization gaps
-        self.refine_weight_dict_by_GA()
+        self.refine_weight_dict_by_GA(fl_ctx)
         
         # Log the weights being used for aggregation
         self.log_info(fl_ctx, f"Aggregating using weights: {self.weight_dict}")
