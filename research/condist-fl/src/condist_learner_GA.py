@@ -16,6 +16,7 @@ import json
 import os
 import traceback
 import torch
+from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Literal, Optional
 
@@ -84,6 +85,7 @@ class ConDistLearner(Learner):
 
         # Create model
         self.model = get_model(task_config["model"])
+        self.prev_model = None
 
         # Configure trainer & validator
         if self._method == "ConDist":
@@ -135,6 +137,10 @@ class ConDistLearner(Learner):
                 else:
                     raise RuntimeError(traceback.format_exc())
 
+        #self.prev_model = deepcopy(self.model.cpu()) # Save previous (r-1 round) local model weights
+        self.prev_model = deepcopy(self.model) # Save previous (r-1 round) local model weights
+
+
         # Run validation
         for i in range(self._max_retry + 1):
             try:
@@ -173,7 +179,7 @@ class ConDistLearner(Learner):
         #         self.system_panic(f"{var_name} weights became NaN...", fl_ctx)
         #         return make_reply(ReturnCode.EXECUTION_EXCEPTION)
 
-        # Calculate weights instead of weight diff
+        # Extract local model weights after training
         local_weights = extract_weights(self.model)
         weights = {}
         for var_name in local_weights:
@@ -223,7 +229,7 @@ class ConDistLearner(Learner):
 
         # 2. Prepare dataset
         phase = None
-        if validate_type == ValidateType.BEFORE_TRAIN_VALIDATE:
+        if validate_type == ValidateType.BEFORE_TRAIN_VALIDATE: # insert GA compute
             phase = "validate"
         elif validate_type == ValidateType.MODEL_VALIDATE:
             phase = "test"
@@ -233,6 +239,7 @@ class ConDistLearner(Learner):
         data_loader = self.dm.get_data_loader(phase)
 
         # 3. Update model weight
+        
         try:
             dxo = from_shareable(data)
         except:
@@ -242,10 +249,23 @@ class ConDistLearner(Learner):
         if not dxo.data_kind == DataKind.WEIGHTS:
             self.log_exception(fl_ctx, f"DXO is of type {dxo.data_kind} but expected type WEIGHTS")
             return make_reply(ReturnCode.BAD_TASK_DATA)
-        load_weights(self.model, dxo.data)
+        load_weights(self.model, dxo.data) # update all client's model with the global model
+
+        self.model = self.model.to("cuda:0")
+        self.prev_model = self.prev_model.to("cuda:0")
+
+        # 3.1 Calculate generalization gap
+        global_model_current_metrics = self.validator.run(self.model, self.dm.get_data_loader("train"))
+
+        if self.prev_model:
+            local_model_prev_metrics = self.validator.run(self.prev_model, self.dm.get_data_loader("train"))
+        else:
+            local_model_prev_metrics = global_model_current_metrics
+
+        generalization_gap = (1 - global_model_current_metrics[self.key_metric]) - (1 - local_model_prev_metrics[self.key_metric])
 
         # 4. Run validation
-        self.model = self.model.to("cuda:0")
+        #self.model = self.model.to("cuda:0")
         for i in range(self._max_retry + 1):
             try:
                 data_loader = self.dm.get_data_loader(phase)
@@ -280,7 +300,13 @@ class ConDistLearner(Learner):
             metrics = raw_metrics
 
         # 5. Return results
-        dxo = DXO(data_kind=DataKind.METRICS, data=metrics)
+        #dxo = DXO(data_kind=DataKind.METRICS, data=metrics)
+
+        dxo = DXO(
+            data_kind=DataKind.COLLECTION, # Use COLLECTION for a collection of data (weights and generalization gap)
+            data={"metrics": metrics, "generalization_gap": generalization_gap},
+        )
+
         return dxo.to_shareable()
 
     def finalize(self, fl_ctx: FLContext):
