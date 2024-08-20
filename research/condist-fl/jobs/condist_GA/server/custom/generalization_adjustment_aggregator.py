@@ -21,27 +21,31 @@ class GeneralizationAdjustmentAggregator(Aggregator):
         self.fair_metric = fair_metric
         self.client_weights = {}
         self.generalization_gaps = {}
-        self.site_results_before_avg = {}
-        self.site_results_after_avg = {}
         self.weight_dict = {}
-
-    def compute_generalization_gap(self, site_name: str) -> float:
-        """Compute generalization gap for a given client using before and after results."""
-        before_metric = self.site_results_before_avg[site_name][self.fair_metric]
-        after_metric = self.site_results_after_avg[site_name][self.fair_metric]
-        return after_metric - before_metric
 
     def accept(self, shareable, fl_ctx: FLContext):
         """Receive client updates and prepare for aggregation."""
         dxo = from_shareable(shareable)
         client_name = shareable.get_peer_prop(ReservedKey.IDENTITY_NAME, "?")
-        
-        # Store model weights for aggregation
-        self.client_weights[client_name] = dxo.data
 
-        # Assume site_results_before_avg and site_results_after_avg are collected externally
-        # Here we compute the generalization gap for the client
-        self.generalization_gaps[client_name] = self.compute_generalization_gap(client_name)
+        # Check if the DXO contains a collection of weights and generalization gap
+        if dxo.data_kind == DataKind.COLLECTION:
+            # Extract the weights and generalization gap
+            self.client_weights[client_name] = dxo.data["weights"]
+            self.generalization_gaps[client_name] = dxo.data["generalization_gap"]
+
+            # Initialize weight_dict with equal weights if it's the first client
+            if not self.weight_dict:
+                num_clients = len(self.client_weights)
+                self.weight_dict = {client: 1.0 / num_clients for client in self.client_weights}
+                self.log_info(fl_ctx, f"Initialized weight_dict with equal weights: {self.weight_dict}")
+        else:
+            # If it's not a collection, log an error
+            self.log_error(fl_ctx, f"Expected DataKind.COLLECTION, but received {dxo.data_kind}.")
+        
+        # Optionally log the acceptance of the model weights and generalization gaps
+        self.log_info(fl_ctx, f"Accepted weights and generalization gap from client: {client_name}")
+
 
     def refine_weight_dict_by_GA(self):
         """Adjust weights based on the generalization gaps and fairness metric."""
@@ -52,17 +56,17 @@ class GeneralizationAdjustmentAggregator(Aggregator):
         else:
             raise ValueError('fair_metric must be acc or loss')
 
-        # Calculate value_list as the difference in metrics (before - after)
-        value_list = []
-        for site_name in self.site_results_before_avg.keys():
-            value_list.append(self.site_results_after_avg[site_name][self.fair_metric] - 
-                              self.site_results_before_avg[site_name][self.fair_metric])
-        
-        value_list = np.array(value_list)
-        
-        # Normalize the gap list
-        norm_gap_list = value_list / np.max(np.abs(value_list))
-        
+        # Calculate value_list as the generalization gap received from clients
+        value_list = np.array([self.generalization_gaps[site_name] for site_name in self.generalization_gaps.keys()])
+
+        # Avoid division by zero if all generalization gaps are the same
+        max_abs_value = np.max(np.abs(value_list))
+        if max_abs_value == 0:
+            norm_gap_list = np.zeros_like(value_list)
+        else:
+            # Normalize the gap list
+            norm_gap_list = value_list / max_abs_value
+
         # Adjust weights for each site
         step_size_adjusted = self.step_size / 3.0  # Adjust step size
         for i, site_name in enumerate(self.weight_dict.keys()):
@@ -70,6 +74,7 @@ class GeneralizationAdjustmentAggregator(Aggregator):
 
         # Normalize the weights to ensure they sum up to 1
         self.weight_dict = self.weight_clip(self.weight_dict)
+
         
     def weight_clip(self, weight_dict):
         """Clip the weights to ensure they are between 0 and 1, and normalize."""
@@ -78,19 +83,30 @@ class GeneralizationAdjustmentAggregator(Aggregator):
             weight_dict[key_name] = np.clip(weight_dict[key_name], 0.0, 1.0)
             new_total_weight += weight_dict[key_name]
         
-        for key_name in weight_dict.keys():
-            weight_dict[key_name] /= new_total_weight
+        if new_total_weight > 0:
+            for key_name in weight_dict.keys():
+                weight_dict[key_name] /= new_total_weight
         
         return weight_dict
 
     def aggregate(self, fl_ctx: FLContext):
         """Perform the Generalization Adjustment and aggregate the model updates."""
+        
         # Adjust weights based on generalization gaps
         self.refine_weight_dict_by_GA()
+        
+        # Log the weights being used for aggregation
+        self.log_info(fl_ctx, f"Aggregating using weights: {self.weight_dict}")
         
         # Perform the FedAvg aggregation using the adjusted weights
         new_model_state = FedAvg(self.client_weights, self.weight_dict)
         
         # Return the aggregated result as a DXO
         aggregated_dxo = DXO(data_kind=DataKind.WEIGHTS, data=new_model_state)
+        
+        # Optionally log the successful aggregation
+        self.log_info(fl_ctx, "Model aggregation complete. Returning aggregated model.")
+        
         return aggregated_dxo.to_shareable()
+
+
