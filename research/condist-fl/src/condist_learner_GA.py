@@ -218,6 +218,8 @@ class ConDistLearner(Learner):
         phase = None
         if validate_type == ValidateType.BEFORE_TRAIN_VALIDATE: # insert GA compute
             phase = "validate"
+            if self.dm.get_data_loader("train") is None:
+                self.dm.setup("train")
         elif validate_type == ValidateType.MODEL_VALIDATE:
             phase = "test"
 
