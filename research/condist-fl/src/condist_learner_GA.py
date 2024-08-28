@@ -72,7 +72,7 @@ class ConDistLearner(Learner):
 
         # Create model
         self.model = get_model(task_config["model"])
-        self.prev_model = None
+        self.prev_model = get_model(task_config["model"])
 
         # Configure trainer & validator
         if self._method == "ConDist":
@@ -125,7 +125,8 @@ class ConDistLearner(Learner):
                     raise RuntimeError(traceback.format_exc())
 
         #self.prev_model = deepcopy(self.model.cpu()) # Save previous (r-1 round) local model weights
-        self.prev_model = deepcopy(self.model) # Save previous (r-1 round) local model weights
+        prev_model_state = deepcopy(self.model.cpu().state_dict()) # Save previous (r-1 round) local model weights
+        self.prev_model.load_state_dict(prev_model_state)
 
 
         # Run validation
@@ -241,7 +242,13 @@ class ConDistLearner(Learner):
         load_weights(self.model, dxo.data) # update all client's model with the global model
 
         self.model = self.model.to("cuda:0")
-        self.prev_model = self.prev_model.to("cuda:0")
+        #self.prev_model = self.prev_model.to("cuda:0")
+
+        if self.prev_model:
+            self.prev_model = self.prev_model.to("cuda:0")
+        else:
+            self.log_warning(fl_ctx, "self.prev_model is None, cannot move to GPU.")
+
 
         # 3.1 Calculate generalization gap
         global_model_current_metrics = self.validator.run(self.model, self.dm.get_data_loader("train"))
