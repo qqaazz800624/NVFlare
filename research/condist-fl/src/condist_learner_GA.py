@@ -1,16 +1,3 @@
-# Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 import json
 import os
@@ -262,7 +249,9 @@ class ConDistLearner(Learner):
         else:
             local_model_prev_metrics = global_model_current_metrics
 
-        generalization_gap = (1 - global_model_current_metrics[self.key_metric]) - (1 - local_model_prev_metrics[self.key_metric])
+        loss_global = (1 - global_model_current_metrics[self.key_metric])
+        loss_local = (1 - local_model_prev_metrics[self.key_metric])
+        generalization_gap = loss_global - loss_local
 
         # 4. Run validation
         #self.model = self.model.to("cuda:0")

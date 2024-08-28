@@ -40,17 +40,8 @@
     },
     {
       "id": "aggregator",
-      "name": "InTimeAccumulateWeightedAggregator",
-      "args": {
-        "exclude_vars": null,
-        "aggregation_weights": {
-          "liver": 1.0,
-          "spleen": 1.0,
-          "pancreas": 1.0,
-          "kidney": 1.0
-        },
-        "expected_data_kind": "WEIGHTS"
-      }
+      "path": "generalization_adjustment_aggregator.GeneralizationAdjustmentAggregator",
+      "args":{}
     },
     {
       "id": "metric_logger",
