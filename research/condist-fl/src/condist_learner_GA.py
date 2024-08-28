@@ -125,7 +125,7 @@ class ConDistLearner(Learner):
                     raise RuntimeError(traceback.format_exc())
 
         #self.prev_model = deepcopy(self.model.cpu()) # Save previous (r-1 round) local model weights
-        prev_model_state = deepcopy(self.model.cpu().state_dict()) # Save previous (r-1 round) local model weights
+        prev_model_state = deepcopy(self.model.state_dict()) # Save previous (r-1 round) local model weights
         self.prev_model.load_state_dict(prev_model_state)
 
 
