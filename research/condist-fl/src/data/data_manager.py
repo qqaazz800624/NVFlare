@@ -57,7 +57,8 @@ class DataManager(object):
         if stage is None:
             for s in ["train", "validate", "test"]:
                 self._dataset[s] = self._build_dataset(s)
-                self._data_loader[s] = _build_data_loader(s)
+                #self._data_loader[s] = _build_data_loader(s)
+                self._data_loader[s] = self._build_data_loader(s)
         elif stage in ["train", "validate", "test"]:
             self._dataset[stage] = self._build_dataset(stage)
             self._data_loader[stage] = self._build_data_loader(stage)
