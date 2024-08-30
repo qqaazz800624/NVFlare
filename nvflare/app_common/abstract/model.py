@@ -25,6 +25,7 @@ from .learnable import Learnable
 class ModelLearnableKey(object):
     WEIGHTS = "weights"
     META = "meta"
+    METRICS = "metrics"
 
 
 class ModelLearnable(Learnable):

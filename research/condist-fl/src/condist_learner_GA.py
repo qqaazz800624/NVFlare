@@ -72,7 +72,8 @@ class ConDistLearner(Learner):
 
         # Create model
         self.model = get_model(task_config["model"])
-        self.prev_model = get_model(task_config["model"])
+        self.prev_local_model = get_model(task_config["model"])
+        self.global_model = get_model(task_config["model"])
 
         # Configure trainer & validator
         if self._method == "ConDist":
@@ -99,6 +100,22 @@ class ConDistLearner(Learner):
         if self.dm.get_data_loader("validate") is None:
             self.dm.setup("validate")
 
+        # Before local training, calculate generalization gap
+        if global_weights:
+            load_weights(self.global_model, global_weights)
+            global_model_current_metrics = self.validator.run(self.global_model, self.dm.get_data_loader("validate"))
+
+            if self.prev_local_model:
+                local_model_prev_metrics = self.validator.run(self.prev_local_model, self.dm.get_data_loader("validate"))
+            else:
+                local_model_prev_metrics = global_model_current_metrics
+            
+            loss_global = (1 - global_model_current_metrics[self.key_metric])
+            loss_local = (1 - local_model_prev_metrics[self.key_metric])
+            generalization_gap = loss_global - loss_local
+        else:
+            generalization_gap = 0.0
+
         # Run training
         for i in range(self._max_retry + 1):
             try:
@@ -124,9 +141,9 @@ class ConDistLearner(Learner):
                 else:
                     raise RuntimeError(traceback.format_exc())
 
-        #self.prev_model = deepcopy(self.model.cpu()) # Save previous (r-1 round) local model weights
-        prev_model_state = deepcopy(self.model.state_dict()) # Save previous (r-1 round) local model weights
-        self.prev_model.load_state_dict(prev_model_state)
+        # Save current local model weights for next round generalization gap calculation
+        prev_model_state = deepcopy(self.model.state_dict()) 
+        self.prev_local_model.load_state_dict(prev_model_state)
 
 
         # Run validation
@@ -181,8 +198,8 @@ class ConDistLearner(Learner):
         # )
 
         dxo = DXO(
-            data_kind=DataKind.WEIGHTS,
-            data=weights,
+            data_kind=DataKind.COLLECTION, # Use COLLECTION for a collection of data (weights and generalization gap)
+            data={"weights": weights, "generalization_gap": generalization_gap},
             meta={MetaKey.NUM_STEPS_CURRENT_ROUND: self.aggregation_steps},
         )
 
@@ -239,31 +256,10 @@ class ConDistLearner(Learner):
         if not dxo.data_kind == DataKind.WEIGHTS:
             self.log_exception(fl_ctx, f"DXO is of type {dxo.data_kind} but expected type WEIGHTS")
             return make_reply(ReturnCode.BAD_TASK_DATA)
-        load_weights(self.model, dxo.data) # update all client's model with the global model
-
-        self.model = self.model.to("cuda:0")
-        #self.prev_model = self.prev_model.to("cuda:0")
-
-        if self.prev_model:
-            self.prev_model = self.prev_model.to("cuda:0")
-        else:
-            self.log_warning(fl_ctx, "self.prev_model is None, cannot move to GPU.")
-
-
-        # 3.1 Calculate generalization gap
-        global_model_current_metrics = self.validator.run(self.model, self.dm.get_data_loader("train"))
-
-        if self.prev_model:
-            local_model_prev_metrics = self.validator.run(self.prev_model, self.dm.get_data_loader("train"))
-        else:
-            local_model_prev_metrics = global_model_current_metrics
-
-        loss_global = (1 - global_model_current_metrics[self.key_metric])
-        loss_local = (1 - local_model_prev_metrics[self.key_metric])
-        generalization_gap = loss_global - loss_local
+        load_weights(self.model, dxo.data) # update local client's model with the global model
 
         # 4. Run validation
-        #self.model = self.model.to("cuda:0")
+        self.model = self.model.to("cuda:0")
         for i in range(self._max_retry + 1):
             try:
                 data_loader = self.dm.get_data_loader(phase)
@@ -298,12 +294,7 @@ class ConDistLearner(Learner):
             metrics = raw_metrics
 
         # 5. Return results
-        #dxo = DXO(data_kind=DataKind.METRICS, data=metrics)
-
-        dxo = DXO(
-            data_kind=DataKind.COLLECTION, # Use COLLECTION for a collection of data (weights and generalization gap)
-            data={"metrics": metrics, "generalization_gap": generalization_gap},
-        )
+        dxo = DXO(data_kind=DataKind.METRICS, data=metrics)
 
         return dxo.to_shareable()
 

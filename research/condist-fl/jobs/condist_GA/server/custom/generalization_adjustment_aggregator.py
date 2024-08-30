@@ -73,7 +73,7 @@ class GeneralizationAdjustmentAggregator(Aggregator):
         centralized_value_list = value_list - mean_generalization_gap
 
         # Avoid division by zero if all generalization gaps are the same
-        max_abs_value = np.max(centralized_value_list)
+        max_abs_value = np.max(np.abs(centralized_value_list))
 
         if max_abs_value == 0:
             norm_gap_list = np.zeros_like(centralized_value_list)

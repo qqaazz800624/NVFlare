@@ -1,104 +1,80 @@
-import time
-import torch
-from nvflare.apis.dxo import DataKind, MetaKey, from_shareable
-from nvflare.apis.event_type import EventType
+from nvflare.apis.dxo import DataKind, from_shareable, DXO
 from nvflare.apis.fl_context import FLContext
 from nvflare.apis.shareable import Shareable
-from nvflare.app_common.abstract.learnable import Learnable
-from nvflare.app_common.abstract.model import ModelLearnableKey, make_model_learnable
+from nvflare.app_common.abstract.model import ModelLearnable, ModelLearnableKey, model_learnable_to_dxo
+from nvflare.app_common.abstract.shareable_generator import ShareableGenerator
 from nvflare.app_common.app_constant import AppConstants
-from nvflare.app_common.shareablegenerators.full_model_shareable_generator import FullModelShareableGenerator
-from nvflare.security.logging import secure_format_exception
 
-class GeneralizationAdjustmentShareableGenerator(FullModelShareableGenerator):
-    def __init__(self, source_model="model", device=None):
-        """Implement Generalization Adjustment with DataKind.COLLECTION."""
-        super().__init__()
-        self.source_model = source_model
-        self.model = None
-        if device is None:
-            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        else:
-            self.device = torch.device(device)
 
-    def handle_event(self, event_type: str, fl_ctx: FLContext):
-        if event_type == EventType.START_RUN:
-            # Initialize the model
-            engine = fl_ctx.get_engine()
-            if isinstance(self.source_model, str):
-                self.model = engine.get_component(self.source_model)
-            else:
-                self.model = self.source_model
-
-            if self.model is None:
-                self.system_panic("Model is not available", fl_ctx)
-                return
-            elif not isinstance(self.model, torch.nn.Module):
-                self.system_panic(f"Expected model to be a torch.nn.Module but got {type(self.model)}", fl_ctx)
-                return
-
-            self.model.to(self.device)
-
-    def server_update(self, weights, generalization_gaps):
-        """Update the global model using the Generalization Adjustment strategy.
+class GAShareableGenerator(ShareableGenerator):
+    def learnable_to_shareable(self, model_learnable: ModelLearnable, fl_ctx: FLContext) -> Shareable:
+        """Convert ModelLearnable to Shareable.
 
         Args:
-            weights: The aggregated weights from clients.
-            generalization_gaps: The generalization gaps from clients.
-
-        Returns:
-            Updated model state dictionary.
-        """
-        self.model.train()
-        # Implement the logic for adjusting the model based on the weights and generalization gaps.
-        # This is where the specifics of your Generalization Adjustment algorithm will be implemented.
-
-        # For example:
-        updated_params = []
-        for name, param in self.model.named_parameters():
-            if name in weights:
-                param.data = torch.tensor(weights[name]).to(self.device)
-                updated_params.append(name)
-        
-        # Incorporate generalization gaps if needed here.
-        # This might involve modifying the weights or adjusting the parameters in some way.
-        
-        return self.model.state_dict(), updated_params
-
-    def shareable_to_learnable(self, shareable: Shareable, fl_ctx: FLContext) -> Learnable:
-        """Convert Shareable to Learnable while doing a Generalization Adjustment update.
-
-        Supporting data_kind == DataKind.COLLECTION.
-
-        Args:
-            shareable (Shareable): Shareable to be converted
+            model_learnable (ModelLearnable): model to be converted
             fl_ctx (FLContext): FL context
 
         Returns:
-            Model: Updated global ModelLearnable.
+            Shareable: a shareable containing a DXO object.
         """
-        # Extract DXO from Shareable
+        dxo = model_learnable_to_dxo(model_learnable)
+        return dxo.to_shareable()
+
+    def shareable_to_learnable(self, shareable: Shareable, fl_ctx: FLContext) -> ModelLearnable:
+        """Convert Shareable to ModelLearnable.
+
+        Supporting TYPE == TYPE_WEIGHT_DIFF or TYPE_WEIGHTS or TYPE_COLLECTION
+
+        Args:
+            shareable (Shareable): Shareable that contains a DXO object
+            fl_ctx (FLContext): FL context
+
+        Returns:
+            A ModelLearnable object
+
+        Raises:
+            TypeError: if shareable is not of type shareable
+            ValueError: if data_kind is not `DataKind.WEIGHTS` and is not `DataKind.WEIGHT_DIFF` and is not `DataKind.COLLECTION`
+        """
+        if not isinstance(shareable, Shareable):
+            raise TypeError("shareable must be Shareable, but got {}.".format(type(shareable)))
+
+        base_model = fl_ctx.get_prop(AppConstants.GLOBAL_MODEL)
         dxo = from_shareable(shareable)
+        if dxo.data_kind == DataKind.WEIGHT_DIFF:
+            if not base_model:
+                self.system_panic(reason="No global base model needed for processing WEIGHT_DIFF!", fl_ctx=fl_ctx)
+                return base_model
 
-        if dxo.data_kind != DataKind.COLLECTION:
-            self.system_panic("Expected data_kind to be DataKind.COLLECTION", fl_ctx)
-            return Learnable()
+            weights = base_model[ModelLearnableKey.WEIGHTS]
+            if dxo.data is not None:
+                model_diff = dxo.data
+                for v_name, v_value in model_diff.items():
+                    weights[v_name] = weights[v_name] + v_value
+        elif dxo.data_kind == DataKind.WEIGHTS:
+            if not base_model:
+                base_model = ModelLearnable()
+            weights = dxo.data
+            if not weights:
+                self.log_info(fl_ctx, "No model weights found. Model will not be updated.")
+            else:
+                base_model[ModelLearnableKey.WEIGHTS] = weights
+        elif dxo.data_kind == DataKind.COLLECTION:
+            if not base_model:
+                base_model = ModelLearnable()
+            weights = dxo.data["weights"]
+            generalization_gap = dxo.data["generalization_gap"]
+            if not weights:
+                self.log_info(fl_ctx, "No model weights found. Model will not be updated.")
+            else:
+                base_model[ModelLearnableKey.WEIGHTS] = weights
+                base_model[ModelLearnableKey.METRICS] = generalization_gap
+            
 
-        data = dxo.data
-        weights = data.get("weights")
-        generalization_gaps = data.get("generalization_gap")
+        else:
+            raise ValueError(
+                "data_kind should be either DataKind.WEIGHTS or DataKind.WEIGHT_DIFF or DataKind.COLLECTION, but got {}".format(dxo.data_kind)
+            )
 
-        start = time.time()
-        updated_weights, updated_params = self.server_update(weights, generalization_gaps)
-        secs = time.time() - start
-
-        # Convert to numpy dict of weights
-        start = time.time()
-        for key in updated_weights:
-            updated_weights[key] = updated_weights[key].detach().cpu().numpy()
-        secs_detach = time.time() - start
-
-        # Log the update process
-        self.log_info(fl_ctx, f"Generalization Adjustment server model update round {fl_ctx.get_prop(AppConstants.CURRENT_ROUND)}, update: {secs} secs., detach: {secs_detach} secs.")
-
-        return make_model_learnable(updated_weights, dxo.get_meta_props())
+        base_model[ModelLearnableKey.META] = dxo.get_meta_props()
+        return base_model
