@@ -35,12 +35,19 @@
     },
     {
       "id": "shareable_generator",
-      "name": "FullModelShareableGenerator",
+      "path": "generalization_adjustment_shareable_generator.GAShareableGenerator",
       "args": {}
     },
     {
       "id": "aggregator",
-      "path": "generalization_adjustment_aggregator.GeneralizationAdjustmentAggregator",
+      "name": "CollectAndAssembleAggregator",
+      "args":{
+        "assembler_id": "assembler"
+      }
+    },
+    {
+      "id": "assembler",
+      "path": "generalization_adjustment_assembler.GeneralizationAdjustmentAssembler",
       "args":{}
     },
     {
