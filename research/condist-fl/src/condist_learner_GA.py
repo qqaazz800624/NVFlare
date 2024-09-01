@@ -103,9 +103,11 @@ class ConDistLearner(Learner):
         # Before local training, calculate generalization gap
         if global_weights:
             load_weights(self.global_model, global_weights)
+            self.global_model = self.global_model.to("cuda:0")
             global_model_current_metrics = self.validator.run(self.global_model, self.dm.get_data_loader("validate"))
 
             if self.prev_local_model:
+                self.prev_local_model = self.prev_local_model.to("cuda:0")
                 local_model_prev_metrics = self.validator.run(self.prev_local_model, self.dm.get_data_loader("validate"))
             else:
                 local_model_prev_metrics = global_model_current_metrics
