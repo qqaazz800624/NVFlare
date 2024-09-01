@@ -51,6 +51,7 @@ class GAShareableGenerator(ShareableGenerator):
                 model_diff = dxo.data
                 for v_name, v_value in model_diff.items():
                     weights[v_name] = weights[v_name] + v_value
+
         elif dxo.data_kind == DataKind.WEIGHTS:
             if not base_model:
                 base_model = ModelLearnable()
@@ -59,18 +60,28 @@ class GAShareableGenerator(ShareableGenerator):
                 self.log_info(fl_ctx, "No model weights found. Model will not be updated.")
             else:
                 base_model[ModelLearnableKey.WEIGHTS] = weights
+
         elif dxo.data_kind == DataKind.COLLECTION:
+            
+            collection_data = dxo.data
+            local_weights = collection_data.get("weights")
+            generalization_gap = collection_data.get("generalization_gap")
+
             if not base_model:
                 base_model = ModelLearnable()
+
+            if local_weights:
+                base_model[ModelLearnableKey.WEIGHTS] = local_weights
+            else:
+                self.log_info(fl_ctx, "No model weights found. Model will not be updated.")
+
+            # You can store generalization_gap in base_model for further aggregation
+            base_model[ModelLearnableKey.META] = dxo.get_meta_props()
+            base_model["generalization_gap"] = generalization_gap
+
             weights = dxo.data["weights"]
             generalization_gap = dxo.data["generalization_gap"]
-            if not weights:
-                self.log_info(fl_ctx, "No model weights found. Model will not be updated.")
-            else:
-                base_model[ModelLearnableKey.WEIGHTS] = weights
-                base_model[ModelLearnableKey.METRICS] = generalization_gap
-            
-
+        
         else:
             raise ValueError(
                 "data_kind should be either DataKind.WEIGHTS or DataKind.WEIGHT_DIFF or DataKind.COLLECTION, but got {}".format(dxo.data_kind)
