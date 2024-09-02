@@ -48,7 +48,9 @@
     {
       "id": "assembler",
       "path": "generalization_adjustment_assembler.GeneralizationAdjustmentAssembler",
-      "args":{}
+      "args":{
+        "step_size": 0.1
+      }
     },
     {
       "id": "metric_logger",

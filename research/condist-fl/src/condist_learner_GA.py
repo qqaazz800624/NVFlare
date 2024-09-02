@@ -87,7 +87,7 @@ class ConDistLearner(Learner):
         # Log training info
         num_rounds = data.get_header(AppConstants.NUM_ROUNDS)
         current_round = data.get_header(AppConstants.CURRENT_ROUND)
-        self.log_info(fl_ctx, f"Current/Total Round: {current_round + 1}/{num_rounds}")
+        self.log_info(fl_ctx, f"Current/Total Round: {current_round}/{num_rounds}")
         self.log_info(fl_ctx, f"Client identity: {fl_ctx.get_identity_name()}")
 
         # Make a copy of model weight for weight diff calculation
@@ -104,11 +104,11 @@ class ConDistLearner(Learner):
         if global_weights:
             load_weights(self.global_model, global_weights)
             self.global_model = self.global_model.to("cuda:0")
-            global_model_current_metrics = self.validator.run(self.global_model, self.dm.get_data_loader("validate"))
+            global_model_current_metrics = self.validator.run(self.global_model, self.dm.get_data_loader("train"))
 
             if self.prev_local_model:
                 self.prev_local_model = self.prev_local_model.to("cuda:0")
-                local_model_prev_metrics = self.validator.run(self.prev_local_model, self.dm.get_data_loader("validate"))
+                local_model_prev_metrics = self.validator.run(self.prev_local_model, self.dm.get_data_loader("train"))
             else:
                 local_model_prev_metrics = global_model_current_metrics
             
