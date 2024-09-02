@@ -105,20 +105,20 @@ class ConDistLearner(Learner):
         if global_weights:
             load_weights(self.global_model, global_weights)
             self.global_model = self.global_model.to("cuda:0")
-            #global_model_current_metrics = self.validator.run(self.global_model, self.dm.get_data_loader("train"))
-            global_model_current_metrics = self.validator.run(model=self.global_model, data_loader=self.dm.get_data_loader("train"), global_model=self.global_model)
+            global_model_current_metrics = self.validator.run(self.global_model, self.dm.get_data_loader("train"))
+            #global_model_current_metrics = self.validator.run(model=self.global_model, data_loader=self.dm.get_data_loader("train"), global_model=self.global_model)
 
             if self.prev_local_model:
                 self.prev_local_model = self.prev_local_model.to("cuda:0")
-                #local_model_prev_metrics = self.validator.run(self.prev_local_model, self.dm.get_data_loader("train"))
-                local_model_prev_metrics = self.validator.run(model=self.prev_local_model, data_loader=self.dm.get_data_loader("train"), global_model=self.global_model)
+                local_model_prev_metrics = self.validator.run(self.prev_local_model, self.dm.get_data_loader("train"))
+                #local_model_prev_metrics = self.validator.run(model=self.prev_local_model, data_loader=self.dm.get_data_loader("train"), global_model=self.global_model)
             else:
                 local_model_prev_metrics = global_model_current_metrics
             
             # loss_global = (1 - global_model_current_metrics[self.key_metric])
             # loss_local = (1 - local_model_prev_metrics[self.key_metric])
-            loss_global = global_model_current_metrics["ds_loss"] + global_model_current_metrics["condist_loss"]
-            loss_local = local_model_prev_metrics["ds_loss"] + local_model_prev_metrics["condist_loss"]
+            loss_global = global_model_current_metrics["ds_loss"] 
+            loss_local = local_model_prev_metrics["ds_loss"] 
 
             generalization_gap = loss_global - loss_local
         else:
@@ -157,8 +157,8 @@ class ConDistLearner(Learner):
         # Run validation
         for i in range(self._max_retry + 1):
             try:
-                #metrics = self.validator.run(model=self.model, data_loader=self.dm.get_data_loader("validate"))
-                metrics = self.validator.run(model=self.model, data_loader=self.dm.get_data_loader("validate"), global_model=self.global_model)
+                metrics = self.validator.run(model=self.model, data_loader=self.dm.get_data_loader("validate"))
+                #metrics = self.validator.run(model=self.model, data_loader=self.dm.get_data_loader("validate"), global_model=self.global_model)
                 break
             except Exception as e:
                 if i < self._max_retry:
@@ -243,7 +243,7 @@ class ConDistLearner(Learner):
 
         # 2. Prepare dataset
         phase = None
-        if validate_type == ValidateType.BEFORE_TRAIN_VALIDATE: # insert GA compute
+        if validate_type == ValidateType.BEFORE_TRAIN_VALIDATE: 
             phase = "validate"
             if self.dm.get_data_loader("train") is None:
                 self.dm.setup("train")
@@ -272,8 +272,8 @@ class ConDistLearner(Learner):
         for i in range(self._max_retry + 1):
             try:
                 data_loader = self.dm.get_data_loader(phase)
-                #raw_metrics = self.validator.run(self.model, data_loader)
-                raw_metrics = self.validator.run(model=self.model, data_loader=data_loader, global_model=self.global_model)
+                raw_metrics = self.validator.run(self.model, data_loader)
+                #raw_metrics = self.validator.run(model=self.model, data_loader=data_loader, global_model=self.global_model)
                 break
             except Exception as e:
                 if i < self._max_retry:

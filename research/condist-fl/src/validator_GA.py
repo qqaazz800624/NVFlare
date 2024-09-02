@@ -20,8 +20,8 @@ from monai.metrics import DiceMetric
 from monai.transforms import AsDiscreted
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from torch.amp import autocast
-from losses import ConDistDiceLoss, MarginalDiceCELoss
+#from losses import ConDistDiceLoss
+from losses import MarginalDiceCELoss
 from monai.losses import DeepSupervisionLoss
 
 def get_fg_classes(fg_idx, classes):
@@ -49,18 +49,20 @@ class Validator(object):
         self.metric = DiceMetric(reduction="mean_batch")
 
         # Initialize loss functions as in ConDistTrainer
-        self.condist_loss_fn = ConDistDiceLoss(
-            num_classes=self.num_classes,
-            foreground=task_config["condist_config"]["foreground"],
-            background=task_config["condist_config"]["background"],
-            temperature=task_config["condist_config"].get("temperature", 2.0),
-            smooth_nr=0.0,
-            batch=True
-        )
+        # self.condist_loss_fn = ConDistDiceLoss(
+        #     num_classes=self.num_classes,
+        #     foreground=task_config["condist_config"]["foreground"],
+        #     background=task_config["condist_config"]["background"],
+        #     temperature=task_config["condist_config"].get("temperature", 2.0),
+        #     smooth_nr=0.0,
+        #     batch=True
+        # )
+
+        # Initialize only the Deep Supervision Loss function
         self.marginal_loss_fn = MarginalDiceCELoss(foreground=task_config["condist_config"]["foreground"], softmax=True, smooth_nr=0.0, batch=True)
         self.ds_loss_fn = DeepSupervisionLoss(self.marginal_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
 
-    def validate_step(self, model: torch.nn.Module, batch: Dict[str, Any], global_model: torch.nn.Module) -> Dict[str, Any]:
+    def validate_step(self, model: torch.nn.Module, batch: Dict[str, Any]) -> None:
         batch["image"] = batch["image"].to("cuda:0")
         batch["label"] = batch["label"].to("cuda:0")
 
@@ -78,38 +80,34 @@ class Validator(object):
 
         ds_loss = self.ds_loss_fn(preds_list, batch["label"])
 
-        # Calculate ConDist Loss
-        with torch.no_grad():
-            targets = global_model(batch["image"])
-            if targets.dim() == 6:
-                targets = targets[:, 0, ::]
-        condist_loss = self.condist_loss_fn(preds_list[0], targets, batch["label"])
+        # # Calculate ConDist Loss
+        # with torch.no_grad():
+        #     targets = global_model(batch["image"])
+        #     if targets.dim() == 6:
+        #         targets = targets[:, 0, ::]
+        # condist_loss = self.condist_loss_fn(preds_list[0], targets, batch["label"])
 
         # calculate metrics
         self.metric(batch["preds"], batch["label"])
 
-        return {
-            "ds_loss": ds_loss.item(),
-            "condist_loss": condist_loss.item(),
-        }
+        return ds_loss.item()
 
     def validate_loop(self, model: torch.nn.Module, data_loader: DataLoader, global_model: torch.nn.Module) -> Dict[str, Any]:
         total_ds_loss = 0.0
-        total_condist_loss = 0.0
+        #total_condist_loss = 0.0
         count = 0
 
         # Run inference over whole validation set
         with torch.no_grad():
-            with autocast('cuda'):
+            with torch.amp.autocast('cuda'):
                 for batch in tqdm(data_loader, desc="Validation DataLoader", dynamic_ncols=True):
-                    losses = self.validate_step(model, batch, global_model)
-                    total_ds_loss += losses["ds_loss"]
-                    total_condist_loss += losses["condist_loss"]
+                    ds_loss = self.validate_step(model, batch)
+                    total_ds_loss += ds_loss
                     count += 1
 
         # Calculate average losses
         avg_ds_loss = total_ds_loss / count
-        avg_condist_loss = total_condist_loss / count
+        #avg_condist_loss = total_condist_loss / count
 
         # Collect metrics
         raw_metrics = self.metric.aggregate()
@@ -122,16 +120,16 @@ class Validator(object):
             metrics["val_meandice_" + organ] = raw_metrics[idx]
         metrics["val_meandice"] = mean / len(self.fg_classes)
 
-        # Add the loss metrics to the result
+        # Add the average Deep Supervision Loss to the metrics
         metrics["avg_ds_loss"] = avg_ds_loss
-        metrics["avg_condist_loss"] = avg_condist_loss
+        #metrics["avg_condist_loss"] = avg_condist_loss
 
         for k, v in metrics.items():
             if isinstance(v, torch.Tensor):
                 metrics[k] = v.tolist()
         return metrics
 
-    def run(self, model: torch.nn.Module, data_loader: DataLoader, global_model: torch.nn.Module) -> Dict[str, Any]:
+    def run(self, model: torch.nn.Module, data_loader: DataLoader) -> Dict[str, Any]:
         model.eval()
-        global_model.eval()
-        return self.validate_loop(model, data_loader, global_model)
+        #global_model.eval()
+        return self.validate_loop(model, data_loader)
