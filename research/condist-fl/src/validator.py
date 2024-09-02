@@ -20,7 +20,7 @@ from monai.metrics import DiceMetric
 from monai.transforms import AsDiscreted
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
+from torch.amp import autocast
 
 def get_fg_classes(fg_idx, classes):
     out = {}
@@ -62,7 +62,8 @@ class Validator(object):
     def validate_loop(self, model, data_loader) -> Dict[str, Any]:
         # Run inference over whole validation set
         with torch.no_grad():
-            with torch.cuda.amp.autocast():
+            #with torch.cuda.amp.autocast():
+            with autocast('cuda'):
                 for batch in tqdm(data_loader, desc="Validation DataLoader", dynamic_ncols=True):
                     self.validate_step(model, batch)
 
