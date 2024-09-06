@@ -38,6 +38,8 @@ from .augmentations import (
 )
 from .normalize import NormalizeIntensityRanged
 
+PIXDIM = [1.5, 1.5, 1.5]
+SPATIAL_SIZE = [128, 128, 128]
 
 def get_train_transforms(num_samples: int = 1):
     transforms = Compose(
@@ -46,7 +48,7 @@ def get_train_transforms(num_samples: int = 1):
             EnsureChannelFirstd(keys=["image", "label"]),
             Orientationd(keys=["image", "label"], as_closest_canonical=True),
             Spacingd(
-                keys=["image", "label"], pixdim=[1.44423774, 1.44423774, 2.87368553], mode=["bilinear", "nearest"]
+                keys=["image", "label"], pixdim=PIXDIM, mode=["bilinear", "nearest"]
             ),
             RandRotated(
                 keys=["image", "label"],
@@ -66,11 +68,11 @@ def get_train_transforms(num_samples: int = 1):
                 keep_size=False,
             ),
             NormalizeIntensityRanged(keys=["image"], a_min=-54.0, a_max=258.0, subtrahend=100.0, divisor=50.0),
-            SpatialPadd(keys=["image", "label"], spatial_size=[224, 224, 64]),
+            SpatialPadd(keys=["image", "label"], spatial_size=SPATIAL_SIZE),
             RandCropByPosNegLabeld(
                 keys=["image", "label"],
                 label_key="label",
-                spatial_size=[224, 224, 64],
+                spatial_size=SPATIAL_SIZE,
                 pos=2.0,
                 neg=1.0,
                 num_samples=num_samples,
@@ -98,7 +100,7 @@ def get_validate_transforms():
             EnsureChannelFirstd(keys=["image", "label"]),
             Orientationd(keys=["image", "label"], as_closest_canonical=True),
             Spacingd(
-                keys=["image", "label"], pixdim=[1.44423774, 1.44423774, 2.87368553], mode=["bilinear", "nearest"]
+                keys=["image", "label"], pixdim=PIXDIM, mode=["bilinear", "nearest"]
             ),
             NormalizeIntensityRanged(keys=["image"], a_min=-54.0, a_max=258.0, subtrahend=100.0, divisor=50.0),
             EnsureTyped(keys=["image", "label"]),
@@ -114,7 +116,7 @@ def get_infer_transforms():
             EnsureChannelFirstd(keys=["image", "label"]),
             Orientationd(keys=["image", "label"], as_closest_canonical=True),
             Spacingd(
-                keys=["image", "label"], pixdim=[1.44423774, 1.44423774, 2.87368553], mode=["bilinear", "nearest"]
+                keys=["image", "label"], pixdim=PIXDIM, mode=["bilinear", "nearest"]
             ),
             NormalizeIntensityRanged(keys=["image"], a_min=-54.0, a_max=258.0, subtrahend=100.0, divisor=50.0),
             EnsureTyped(keys=["image", "label"]),
