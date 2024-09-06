@@ -26,7 +26,8 @@
       "in_channels": 1,
       "out_channels": 8,
       "kernel_size": 3,
-      "deep_supervision": true
+      "deep_supervision": true,
+      "use_grad_checkpoint": true
     }
   },
 
