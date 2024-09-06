@@ -19,22 +19,19 @@
   },
 
   "model": {
-    "name": "DynUNet",
-    "path": "monai.networks.nets",
+    "name": "mednext_base",
+    "path": "models",
     "args": {
       "spatial_dims": 3,
       "in_channels": 1,
       "out_channels": 8,
-      "kernel_size": [[3, 3, 1], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3], [3, 3, 3]],
-      "strides": [[1, 1, 1], [2, 2, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]],
-      "upsample_kernel_size": [[2, 2, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]],
-      "deep_supervision": true,
-      "deep_supr_num": 3
+      "kernel_size": 3,
+      "deep_supervision": true
     }
   },
 
   "training": {
-    "lr": 1e-2,
+    "lr": 1e-3,
     "max_steps": 120000,
     "max_rounds": 120,
 
@@ -42,7 +39,7 @@
   },
 
   "inferer": {
-    "roi_size": [224, 224, 64],
+    "roi_size": [128, 128, 128],
     "sw_batch_size": 1
   }
 }

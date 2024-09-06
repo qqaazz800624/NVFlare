@@ -78,6 +78,9 @@ class Validator(object):
         else:
             preds_list = [batch["preds"]]
 
+        print(batch["label"].shape)
+        print(len(preds_list[0]))
+
         ds_loss = self.ds_loss_fn(preds_list, batch["label"])
 
         # # Calculate ConDist Loss
@@ -92,7 +95,7 @@ class Validator(object):
 
         return ds_loss.item()
 
-    def validate_loop(self, model: torch.nn.Module, data_loader: DataLoader, global_model: torch.nn.Module) -> Dict[str, Any]:
+    def validate_loop(self, model: torch.nn.Module, data_loader: DataLoader) -> Dict[str, Any]:
         total_ds_loss = 0.0
         #total_condist_loss = 0.0
         count = 0

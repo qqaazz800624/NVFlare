@@ -14,8 +14,8 @@ from torch.utils.tensorboard import SummaryWriter
 from trainer import ConDistTrainer
 from utils.get_model import get_model
 from utils.model_weights import extract_weights, load_weights
-#from validator import Validator
-from validator_GA import Validator
+from validator import Validator
+#from validator_GA import Validator
 
 from nvflare.apis.dxo import DXO, DataKind, MetaKey, from_shareable
 from nvflare.apis.fl_constant import FLContextKey
@@ -115,10 +115,10 @@ class ConDistLearner(Learner):
             else:
                 local_model_prev_metrics = global_model_current_metrics
             
-            # loss_global = (1 - global_model_current_metrics[self.key_metric])
-            # loss_local = (1 - local_model_prev_metrics[self.key_metric])
-            loss_global = global_model_current_metrics["ds_loss"] 
-            loss_local = local_model_prev_metrics["ds_loss"] 
+            loss_global = (1 - global_model_current_metrics[self.key_metric])
+            loss_local = (1 - local_model_prev_metrics[self.key_metric])
+            # loss_global = global_model_current_metrics["ds_loss"] 
+            # loss_local = local_model_prev_metrics["ds_loss"] 
 
             generalization_gap = loss_global - loss_local
         else:
