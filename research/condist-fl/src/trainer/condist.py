@@ -31,13 +31,12 @@ from utils.get_model import get_model
 
 class ConDistTrainer(object):
     def __init__(self, task_config: Dict):
-        self.init_lr = task_config["training"].get("lr", 1e-3)
+        self.init_lr = task_config["training"].get("lr", 1e-2)
         self.max_steps = task_config["training"]["max_steps"]
         self.max_rounds = task_config["training"]["max_rounds"]
 
         self.use_half_precision = task_config["training"].get("use_half_precision", False)
-        #self.scaler = torch.cuda.amp.GradScaler(enabled=self.use_half_precision)
-        self.scaler = torch.amp.GradScaler('cuda', enabled=self.use_half_precision)
+        self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_half_precision)
 
         num_classes = len(task_config["classes"])
         foreground = task_config["condist_config"]["foreground"]
@@ -123,7 +122,7 @@ class ConDistTrainer(object):
 
             for batch in self.get_batch(data_loader, num_steps):
                 # Forward
-                with torch.cuda.amp.autocast(enabled=self.use_half_precision):
+                with torch.amp.autocast("cuda", enabled=self.use_half_precision):
                     loss = self.training_step(self.model, batch)
 
                 # Backward
