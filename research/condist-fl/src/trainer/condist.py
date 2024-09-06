@@ -21,7 +21,7 @@ import torch.amp
 import torch.nn as nn
 from losses import ConDistDiceLoss, MarginalDiceCELoss
 from monai.losses import DeepSupervisionLoss
-from torch.optim import SGD
+from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -31,7 +31,7 @@ from utils.get_model import get_model
 
 class ConDistTrainer(object):
     def __init__(self, task_config: Dict):
-        self.init_lr = task_config["training"].get("lr", 1e-2)
+        self.init_lr = task_config["training"].get("lr", 1e-3)
         self.max_steps = task_config["training"]["max_steps"]
         self.max_rounds = task_config["training"]["max_rounds"]
 
@@ -66,7 +66,8 @@ class ConDistTrainer(object):
         self.weight = left + intv * self.current_round
 
     def configure_optimizer(self):
-        self.opt = SGD(self.model.parameters(), lr=self.init_lr, momentum=0.99, nesterov=True, weight_decay=1e-5)
+        #self.opt = SGD(self.model.parameters(), lr=self.init_lr, momentum=0.99, nesterov=True, weight_decay=1e-5)
+        self.opt = AdamW(self.model.parameters(), lr=self.init_lr)
         if self.opt_state is not None:
             self.opt.load_state_dict(self.opt_state)
 
