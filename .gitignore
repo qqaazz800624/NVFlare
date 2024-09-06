@@ -174,4 +174,4 @@ infer
 *.pt
 workspace_GA
 FedDG-GA
-workspace_GA_DSLoss
+mednext
