@@ -174,3 +174,4 @@ infer
 *.pt
 workspace_GA
 FedDG-GA
+cross_site_validate_GA.json
