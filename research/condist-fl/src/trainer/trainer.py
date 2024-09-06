@@ -20,7 +20,7 @@ import torch
 import torch.nn as nn
 from losses import MarginalDiceCELoss
 from monai.losses import DeepSupervisionLoss
-from torch.optim import SGD
+from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -58,7 +58,8 @@ class Trainer(object):
         self.weight = left + intv * self.current_round
 
     def configure_optimizer(self):
-        self.opt = SGD(self.model.parameters(), lr=self.init_lr, momentum=0.99, nesterov=True, weight_decay=1e-5)
+        #self.opt = SGD(self.model.parameters(), lr=self.init_lr, momentum=0.99, nesterov=True, weight_decay=1e-5)
+        self.opt = AdamW(self.model.parameters(), lr=self.init_lr)
         if self.opt_state is not None:
             self.opt.load_state_dict(self.opt_state)
 
