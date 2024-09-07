@@ -172,7 +172,6 @@ __pycache__
 workspace
 infer
 *.pt
-workspace_GA
 FedDG-GA
 mednext
-workspace_GA_mednext
+workspace*
