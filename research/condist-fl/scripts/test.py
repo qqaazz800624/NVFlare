@@ -1,11 +1,7 @@
 #%%
 
-total = dict()
-total['a'] = 1
-total['b'] = 2
-
-
-total.get('c') is None
+from monai.networks.nets import UNet
+from models import mednext_base
 
 #%%
 
