@@ -13,14 +13,17 @@
 # limitations under the License.
 
 import json
+import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
+sys.path.append("src")
+
 import numpy as np
 import torch
-from src.data import DataManager
-from src.utils.get_model import get_model
-from src.validator import Validator
+from data import DataManager
+from utils.get_model import get_model
+from validator import Validator
 
 
 def load_ckpt(app: str, model: torch.nn.Module, ckpt_path: str):
