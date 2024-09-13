@@ -5,5 +5,5 @@ export PYTHONPATH=$PWD/src:$PYTHONPATH
 nvflare simulator \
   -w $PWD/workspace_GA_mednext \
   -c liver,spleen,pancreas,kidney \
-  -gpu 4,5,6,7 \
+  -gpu 1,0,2,3 \
   jobs/condist_GA

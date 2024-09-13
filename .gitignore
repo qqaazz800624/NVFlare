@@ -173,6 +173,6 @@ workspace
 infer
 *.pt
 FedDG-GA
-mednext
+mednext*
 workspace*
 cross_site_validate*
