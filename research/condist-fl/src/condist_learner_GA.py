@@ -14,8 +14,8 @@ from torch.utils.tensorboard import SummaryWriter
 from trainer import ConDistTrainer
 from utils.get_model import get_model
 from utils.model_weights import extract_weights, load_weights
-from validator import Validator
-#from validator_GA import Validator
+#from validator import Validator
+from validator_GA import Validator
 
 from nvflare.apis.dxo import DXO, DataKind, MetaKey, from_shareable
 from nvflare.apis.fl_constant import FLContextKey
@@ -63,8 +63,10 @@ class ConDistLearner(Learner):
             data_config = json.load(f)
 
         # Initialize variables
-        self.key_metric = "val_meandice"
-        self.best_metric = -np.inf
+        #self.key_metric = "val_meandice"
+        self.key_metric = "val_loss"
+        #self.best_metric = -np.inf
+        self.best_metric = np.inf
         self.best_model_path = "models/best_model.pt"
         self.last_model_path = "models/last.pt"
 
@@ -115,10 +117,10 @@ class ConDistLearner(Learner):
             else:
                 local_model_prev_metrics = global_model_current_metrics
             
-            loss_global = (1 - global_model_current_metrics[self.key_metric])
-            loss_local = (1 - local_model_prev_metrics[self.key_metric])
-            # loss_global = global_model_current_metrics["ds_loss"] 
-            # loss_local = local_model_prev_metrics["ds_loss"] 
+            # loss_global = (1 - global_model_current_metrics[self.key_metric])
+            # loss_local = (1 - local_model_prev_metrics[self.key_metric])
+            loss_global = global_model_current_metrics[self.key_metric] 
+            loss_local = local_model_prev_metrics[self.key_metric] 
 
             generalization_gap = loss_global - loss_local
         else:
@@ -179,7 +181,8 @@ class ConDistLearner(Learner):
         self.log_info(fl_ctx, str(table))
 
         # Save checkpoint if necessary
-        if self.best_metric < metrics[self.key_metric]:
+        #if self.best_metric < metrics[self.key_metric]:
+        if metrics[self.key_metric] < self.best_metric:
             self.best_metric = metrics[self.key_metric]
             self.trainer.save_checkpoint(self.best_model_path, self.model)
         self.trainer.save_checkpoint(self.last_model_path, self.model)
@@ -297,7 +300,8 @@ class ConDistLearner(Learner):
         if validate_type == ValidateType.BEFORE_TRAIN_VALIDATE:
             metrics = {MetaKey.INITIAL_METRICS: raw_metrics[self.key_metric]}
             # Save as best model
-            if self.best_metric < raw_metrics[self.key_metric]:
+            #if self.best_metric < raw_metrics[self.key_metric]:
+            if raw_metrics[self.key_metric] < self.best_metric:
                 self.best_metric = raw_metrics[self.key_metric]
                 self.trainer.save_checkpoint(self.best_model_path, self.model)
         else:
