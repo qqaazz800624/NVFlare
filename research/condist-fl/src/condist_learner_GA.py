@@ -63,10 +63,10 @@ class ConDistLearner(Learner):
             data_config = json.load(f)
 
         # Initialize variables
-        #self.key_metric = "val_meandice"
-        self.key_metric = "val_loss"
-        #self.best_metric = -np.inf
-        self.best_metric = np.inf
+        self.key_metric = "val_meandice"
+        self.loss_metric = "val_loss"
+        self.best_metric = -np.inf
+        #self.best_metric = np.inf
         self.best_model_path = "models/best_model.pt"
         self.last_model_path = "models/last.pt"
 
@@ -119,8 +119,8 @@ class ConDistLearner(Learner):
             
             # loss_global = (1 - global_model_current_metrics[self.key_metric])
             # loss_local = (1 - local_model_prev_metrics[self.key_metric])
-            loss_global = global_model_current_metrics[self.key_metric] 
-            loss_local = local_model_prev_metrics[self.key_metric] 
+            loss_global = global_model_current_metrics[self.loss_metric] 
+            loss_local = local_model_prev_metrics[self.loss_metric] 
 
             generalization_gap = loss_global - loss_local
         else:
@@ -181,8 +181,8 @@ class ConDistLearner(Learner):
         self.log_info(fl_ctx, str(table))
 
         # Save checkpoint if necessary
-        #if self.best_metric < metrics[self.key_metric]:
-        if metrics[self.key_metric] < self.best_metric:
+        if self.best_metric < metrics[self.key_metric]:
+        #if metrics[self.key_metric] < self.best_metric:
             self.best_metric = metrics[self.key_metric]
             self.trainer.save_checkpoint(self.best_model_path, self.model)
         self.trainer.save_checkpoint(self.last_model_path, self.model)
@@ -300,8 +300,8 @@ class ConDistLearner(Learner):
         if validate_type == ValidateType.BEFORE_TRAIN_VALIDATE:
             metrics = {MetaKey.INITIAL_METRICS: raw_metrics[self.key_metric]}
             # Save as best model
-            #if self.best_metric < raw_metrics[self.key_metric]:
-            if raw_metrics[self.key_metric] < self.best_metric:
+            if self.best_metric < raw_metrics[self.key_metric]:
+            #if raw_metrics[self.key_metric] < self.best_metric:
                 self.best_metric = raw_metrics[self.key_metric]
                 self.trainer.save_checkpoint(self.best_model_path, self.model)
         else:
