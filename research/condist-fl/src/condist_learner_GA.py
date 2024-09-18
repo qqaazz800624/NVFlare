@@ -16,6 +16,7 @@ from utils.get_model import get_model
 from utils.model_weights import extract_weights, load_weights
 #from validator import Validator
 from validator_GA import Validator
+from validator_GA_loss import Validator_loss
 
 from nvflare.apis.dxo import DXO, DataKind, MetaKey, from_shareable
 from nvflare.apis.fl_constant import FLContextKey
@@ -82,6 +83,7 @@ class ConDistLearner(Learner):
         if self._method == "ConDist":
             self.trainer = ConDistTrainer(task_config)
         self.validator = Validator(task_config)
+        self.validator_loss = Validator_loss(task_config)
 
         # Create logger
         self.tb_logger = SummaryWriter(log_dir=prefix / "logs")
@@ -107,12 +109,12 @@ class ConDistLearner(Learner):
         if global_weights:
             load_weights(self.global_model, global_weights)
             self.global_model = self.global_model.to("cuda:0")
-            global_model_current_metrics = self.validator.run(self.global_model, self.dm.get_data_loader("train"))
+            global_model_current_metrics = self.validator_loss.run(self.global_model, self.dm.get_data_loader("train"))
             #global_model_current_metrics = self.validator.run(model=self.global_model, data_loader=self.dm.get_data_loader("train"), global_model=self.global_model)
 
             if self.prev_local_model:
                 self.prev_local_model = self.prev_local_model.to("cuda:0")
-                local_model_prev_metrics = self.validator.run(self.prev_local_model, self.dm.get_data_loader("train"))
+                local_model_prev_metrics = self.validator_loss.run(self.prev_local_model, self.dm.get_data_loader("train"))
                 #local_model_prev_metrics = self.validator.run(model=self.prev_local_model, data_loader=self.dm.get_data_loader("train"), global_model=self.global_model)
             else:
                 local_model_prev_metrics = global_model_current_metrics
@@ -276,6 +278,7 @@ class ConDistLearner(Learner):
             try:
                 data_loader = self.dm.get_data_loader(phase)
                 raw_metrics = self.validator.run(self.model, data_loader)
+                raw_loss = self.validator_loss.run(self.model, data_loader)
                 #raw_metrics = self.validator.run(model=self.model, data_loader=data_loader, global_model=self.global_model)
                 break
             except Exception as e:
@@ -294,6 +297,11 @@ class ConDistLearner(Learner):
         self.log_info(
             fl_ctx,
             f"Validation metrics of {model_owner}'s model on" f" {fl_ctx.get_identity_name()}'s data: {raw_metrics}",
+            
+        )
+        self.log_info(
+            fl_ctx,
+            f"Validation loss of {model_owner}'s model on" f" {fl_ctx.get_identity_name()}'s data: {raw_loss}",
         )
 
         # For validation before training, only key metric is needed

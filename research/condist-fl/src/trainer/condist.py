@@ -81,6 +81,9 @@ class ConDistTrainer(object):
         preds = model(image)
         if preds.dim() == 6:
             preds = [preds[:, i, ::] for i in range(preds.shape[1])]
+        # print('len of training preds: ', len(preds))
+        # print('shape of training preds: ', preds[0].shape)
+        # print('shape of training label: ', label.shape)
         ds_loss = self.ds_loss_fn(preds, label)
 
         with torch.no_grad():
