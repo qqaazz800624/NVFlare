@@ -79,19 +79,23 @@ class ConDistTrainer(object):
         label = batch["label"].to(device)
 
         preds = model(image)
-        # print('training preds.shape = ', preds.shape)
-        # print('training label.shape = ', label.shape)
+        print('training preds.shape: ', preds.shape)
+
         if preds.dim() == 6:
             preds = [preds[:, i, ::] for i in range(preds.shape[1])]
-        # print('len of training preds: ', len(preds))
-        # print('shape of training preds: ', preds[0].shape)
-        # print('shape of training label: ', label.shape)
+        
+        print('training len(preds): ', len(preds))
+        print('training preds[0].shape: ', preds[0].shape)
+        
         ds_loss = self.ds_loss_fn(preds, label)
 
         with torch.no_grad():
             targets = self.global_model(image)
             if targets.dim() == 6:
                 targets = targets[:, 0, ::]
+        # print('training targets.shape: ', targets.shape)
+        # print('training preds[0].shape: ', preds[0].shape)
+        # print('training label.shape: ', label.shape)
         condist_loss = self.condist_loss_fn(preds[0], targets, label)
 
         loss = ds_loss + self.weight * condist_loss

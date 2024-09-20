@@ -90,9 +90,9 @@ class ConDistLearner(Learner):
 
     def train(self, data: Shareable, fl_ctx: FLContext, abort_signal: Signal) -> Shareable:
         # Log training info
-        num_rounds = data.get_header(AppConstants.NUM_ROUNDS)
-        current_round = data.get_header(AppConstants.CURRENT_ROUND)
-        self.log_info(fl_ctx, f"Current/Total Round: {current_round}/{num_rounds}")
+        self.num_rounds = data.get_header(AppConstants.NUM_ROUNDS)
+        self.current_round = data.get_header(AppConstants.CURRENT_ROUND)
+        self.log_info(fl_ctx, f"Current/Total Round: {self.current_round}/{self.num_rounds}")
         self.log_info(fl_ctx, f"Client identity: {fl_ctx.get_identity_name()}")
 
         # Make a copy of model weight for weight diff calculation
@@ -109,13 +109,13 @@ class ConDistLearner(Learner):
         if global_weights:
             load_weights(self.global_model, global_weights)
             self.global_model = self.global_model.to("cuda:0")
-            global_model_current_metrics = self.validator_loss.run(self.global_model, self.dm.get_data_loader("train"))
-            #global_model_current_metrics = self.validator.run(model=self.global_model, data_loader=self.dm.get_data_loader("train"), global_model=self.global_model)
+            #global_model_current_metrics = self.validator_loss.run(self.global_model, self.dm.get_data_loader("train"))
+            global_model_current_metrics = self.validator_loss.run(self.global_model, self.dm.get_data_loader("train"), global_model=self.global_model, current_round=self.current_round)
 
             if self.prev_local_model:
                 self.prev_local_model = self.prev_local_model.to("cuda:0")
-                local_model_prev_metrics = self.validator_loss.run(self.prev_local_model, self.dm.get_data_loader("train"))
-                #local_model_prev_metrics = self.validator.run(model=self.prev_local_model, data_loader=self.dm.get_data_loader("train"), global_model=self.global_model)
+                #local_model_prev_metrics = self.validator_loss.run(self.prev_local_model, self.dm.get_data_loader("train"))
+                local_model_prev_metrics = self.validator_loss.run(self.prev_local_model, self.dm.get_data_loader("train"), global_model=self.global_model, current_round=self.current_round)
             else:
                 local_model_prev_metrics = global_model_current_metrics
             
@@ -179,7 +179,7 @@ class ConDistLearner(Learner):
         table.field_names = ["Metric", "Value"]
         for m, v in metrics.items():
             table.add_row([m, v])
-            self.tb_logger.add_scalar(m, v, current_round)
+            self.tb_logger.add_scalar(m, v, self.current_round)
         self.log_info(fl_ctx, str(table))
 
         # Save checkpoint if necessary
@@ -245,6 +245,7 @@ class ConDistLearner(Learner):
         # 1. Extract data from shareable
         model_owner = data.get_header(AppConstants.MODEL_OWNER, "global_model")
         validate_type = data.get_header(AppConstants.VALIDATE_TYPE)
+        self.current_round = data.get_header(AppConstants.CURRENT_ROUND)
 
         # 2. Prepare dataset
         phase = None
@@ -271,15 +272,16 @@ class ConDistLearner(Learner):
             self.log_exception(fl_ctx, f"DXO is of type {dxo.data_kind} but expected type WEIGHTS")
             return make_reply(ReturnCode.BAD_TASK_DATA)
         load_weights(self.model, dxo.data) # update local client's model with the global model
+        load_weights(self.global_model, dxo.data) # load global model's weights
 
         # 4. Run validation
         self.model = self.model.to("cuda:0")
+        self.global_model = self.global_model.to("cuda:0")
         for i in range(self._max_retry + 1):
             try:
                 data_loader = self.dm.get_data_loader(phase)
                 raw_metrics = self.validator.run(self.model, data_loader)
-                raw_loss = self.validator_loss.run(self.model, data_loader)
-                #raw_metrics = self.validator.run(model=self.model, data_loader=data_loader, global_model=self.global_model)
+                raw_loss = self.validator_loss.run(self.model, data_loader, global_model=self.global_model, current_round=self.current_round)
                 break
             except Exception as e:
                 if i < self._max_retry:
