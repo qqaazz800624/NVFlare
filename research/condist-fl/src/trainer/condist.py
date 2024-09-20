@@ -79,13 +79,13 @@ class ConDistTrainer(object):
         label = batch["label"].to(device)
 
         preds = model(image)
-        print('training preds.shape: ', preds.shape)
+        #print('training preds.shape: ', preds.shape)
 
         if preds.dim() == 6:
             preds = [preds[:, i, ::] for i in range(preds.shape[1])]
         
-        print('training len(preds): ', len(preds))
-        print('training preds[0].shape: ', preds[0].shape)
+        # print('training len(preds): ', len(preds))
+        # print('training preds[0].shape: ', preds[0].shape)
         
         ds_loss = self.ds_loss_fn(preds, label)
 
