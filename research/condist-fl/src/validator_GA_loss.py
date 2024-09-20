@@ -53,17 +53,15 @@ class Validator_loss(object):
         batch["preds"] = self.inferer(batch["image"], model)
 
         # Post processing
-        batch = self.post(batch)
+        #batch = self.post(batch)
+        # 'batch["preds"].dim() = 5
+        # print('validation batch["preds"].shape = ', batch["preds"].shape)
+        # print('validation batch["label"].shape = ', batch["label"].shape)
 
         # calculate loss
-        loss = self.loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
-        #loss = self.marginal_loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
-        #print('shape of validation batch["preds"]: ', batch["preds"].shape)
-        # print('dim of batch["preds"]: ', batch["preds"].dim())
+        #loss = self.loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
+        loss = self.marginal_loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
         #preds = [batch["preds"][:, i, ::] for i in range(batch["preds"].shape[1])]
-        #print('len of validation preds: ', len(preds))
-        #print('shape of validation preds: ', preds[0].shape)
-        #print('shape of validation batch["label"]: ', batch["label"].shape)
         #loss = self.ds_loss_fn(preds, batch["label"])
         self.losses.append(loss.detach().cpu())
 

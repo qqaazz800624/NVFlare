@@ -79,6 +79,8 @@ class ConDistTrainer(object):
         label = batch["label"].to(device)
 
         preds = model(image)
+        # print('training preds.shape = ', preds.shape)
+        # print('training label.shape = ', label.shape)
         if preds.dim() == 6:
             preds = [preds[:, i, ::] for i in range(preds.shape[1])]
         # print('len of training preds: ', len(preds))
