@@ -42,14 +42,14 @@ def run_convert(args):
             config = json.load(f)
             config = config["model"]
 
-    ckpt = torch.load(args.weights)
+    ckpt = torch.load(args.weights, map_location="cpu")
     state_dict = ckpt["model"]
 
     model = get_model(config)
     model.load_state_dict(state_dict)
-    model = model.cuda().eval()
+    model = model.eval()
 
-    sample_data = torch.rand([1, 1, 224, 224, 64]).cuda()
+    sample_data = torch.rand([1, 1, 224, 224, 64])
     traced_module = torch.jit.trace(model, sample_data)
 
     torch.jit.save(traced_module, args.output)
