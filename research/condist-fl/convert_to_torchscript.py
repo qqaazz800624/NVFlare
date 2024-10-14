@@ -13,8 +13,11 @@
 # limitations under the License.
 
 import json
+import sys
 from argparse import ArgumentParser
 from pathlib import Path
+
+sys.path.append("src")
 
 import torch
 from src.utils.get_model import get_model
