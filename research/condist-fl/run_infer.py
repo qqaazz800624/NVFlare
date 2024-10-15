@@ -72,7 +72,16 @@ def main(args):
 
     dp = DataProcessor(i_min=-54.0, i_max=258.0, mean=100.0, std=50.0, output_dir=args.output)
 
-    inferer = SlidingWindowInferer(roi_size=[224, 224, 64], mode="gaussian", sw_batch_size=1, overlap=0.50)
+    if args.model_type == "nnUNet":
+        inferer = SlidingWindowInferer(roi_size=[224, 224, 64], mode="gaussian", sw_batch_size=1, overlap=0.50)
+    elif args.model_type == "MedNeXt":
+        inferer = SlidingWindowInferer(roi_size=[128, 128, 128], mode="gaussian", sw_batch_size=1, overlap=0.50)
+    
+    # nnUNet
+    #inferer = SlidingWindowInferer(roi_size=[224, 224, 64], mode="gaussian", sw_batch_size=1, overlap=0.50)
+
+    # MedNeXt
+    #inferer = SlidingWindowInferer(roi_size=[128, 128, 128], mode="gaussian", sw_batch_size=1, overlap=0.50)
 
     model = torch.jit.load(args.model)
     model = model.eval().cuda()
@@ -94,6 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("--data_list_key", "-k", type=str, help="Target data split key in data list.")
     parser.add_argument("--model", "-m", type=str, help="Path to model torchscript file.")
     parser.add_argument("--output", "-o", type=str, help="Output directory.")
+    parser.add_argument("--model_type", "-t", type=str, help="Model type.")
     args = parser.parse_args()
 
     main(args)
