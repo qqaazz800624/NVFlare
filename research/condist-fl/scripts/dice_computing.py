@@ -87,11 +87,11 @@ def dice_compute(seg_mask, label):
     model_output_data = seg_mask.astype(np.int32)
     ground_truth_data = label.astype(np.int32)
     
-    pred_liver_tumor_mask = (model_output_data == target_class).astype(np.int32)
-    gt_liver_tumor_mask = (ground_truth_data == target_class).astype(np.int32)
+    pred_mask = (model_output_data == target_class).astype(np.int32)
+    gt_mask = (ground_truth_data == target_class).astype(np.int32)
     
-    pred_tensor = torch.from_numpy(pred_liver_tumor_mask)
-    gt_tensor = torch.from_numpy(gt_liver_tumor_mask)
+    pred_tensor = torch.from_numpy(pred_mask)
+    gt_tensor = torch.from_numpy(gt_mask)
     
     pred_tensor = pred_tensor.float()
     gt_tensor = gt_tensor.float()
@@ -102,7 +102,7 @@ def dice_compute(seg_mask, label):
     return dice_score
 
 #%%
-target = 'pancreas_tumor'
+target = 'liver_tumor'
 
 data_dir = data_dir_dict[target]
 data_root = f"/neodata/open_dataset/ConDistFL/data/{data_dir}"
@@ -182,7 +182,7 @@ else:
 
 # Wilcoxon signed-rank test
 
-stat, pavlue = stats.wilcoxon(dice_scores, dice_scores_GA)
+stat, p_value = stats.wilcoxon(dice_scores_GA, dice_scores, alternative='greater')
 
 print("p-value of Wilcoxon signed-rank test", p_value)
 print("statistic of Wilcoxon signed-rank test", stat)
@@ -191,10 +191,10 @@ alpha = 0.05
 
 if p_value < alpha:
     print("Reject the null hypothesis.")
-    print("There is a statistically significant difference between the two groups.")
+    print("The GA method is statistically significantly better than the Non-GA method.")
 else:
     print("Cannot reject the null hypothesis.")
-    print("There is no statistically significant difference between the two groups.")
+    print("The GA method is not statistically significantly better than the Non-GA method.")
 
 #%%
 

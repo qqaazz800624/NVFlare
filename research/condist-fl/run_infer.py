@@ -37,15 +37,21 @@ class ImageDataset(object):
 
 
 class DataProcessor(object):
-    def __init__(self, i_min: float, i_max: float, mean: float, std: float, output_dir: str) -> None:
+    def __init__(self, i_min: float, i_max: float, mean: float, std: float, output_dir: str, model_type: str) -> None:
         self.i_min = i_min
         self.i_max = i_max
         self.mean = mean
         self.std = std
+        self.model_type = model_type
 
         self.reader = LoadImage(image_only=True)
         self.channel = EnsureChannelFirst()
-        self.spacing = Spacing(pixdim=[1.44, 1.44, 2.87])
+
+        if self.model_type == "nnUNet":
+            self.spacing = Spacing(pixdim=[1.44, 1.44, 2.87])
+        elif self.model_type == "MedNeXt":
+            self.spacing = Spacing(pixdim=[1.5, 1.5, 1.5])
+
         self.post = AsDiscrete(argmax=True)
         self.writer = SaveImage(
             output_dir=output_dir, output_postfix="seg", output_dtype=np.uint8, separate_folder=False, resample=True
@@ -70,7 +76,7 @@ class DataProcessor(object):
 def main(args):
     data = ImageDataset(args.data_root, args.data_list, args.data_list_key)
 
-    dp = DataProcessor(i_min=-54.0, i_max=258.0, mean=100.0, std=50.0, output_dir=args.output)
+    dp = DataProcessor(i_min=-54.0, i_max=258.0, mean=100.0, std=50.0, output_dir=args.output, model_type=args.model_type)
 
     if args.model_type == "nnUNet":
         inferer = SlidingWindowInferer(roi_size=[224, 224, 64], mode="gaussian", sw_batch_size=1, overlap=0.50)
