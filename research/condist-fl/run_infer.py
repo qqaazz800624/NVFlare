@@ -91,7 +91,8 @@ def main(args):
 
     model = torch.jit.load(args.model)
     model = model.eval().cuda()
-    with torch.cuda.amp.autocast():
+    #with torch.cuda.amp.autocast():
+    with torch.amp.autocast('cuda'):
         with torch.no_grad():
             for image in iter(data):
                 image = dp.preprocess(input_file_name=image)
