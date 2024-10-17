@@ -15,7 +15,7 @@ DEFAULT_DATA_ROOT="Pancreas"  # Pancreas, Liver, KiTS19, Spleen
 DATA_ROOT=${3:-$DEFAULT_DATA_ROOT}
 
 # set default model name to evaluate
-DEFAULT_MODEL_NAME="pancreas"   # pancreas, liver, kidney, spleen
+DEFAULT_MODEL_NAME="pancreas"   # kidney, liver, pancreas, spleen, global
 
 # allow overriding the default model name with a command-line argument
 MODEL_NAME=${1:-$DEFAULT_MODEL_NAME}
