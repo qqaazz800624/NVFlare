@@ -196,6 +196,7 @@ else:
     print("Cannot reject the null hypothesis.")
     print("The GA method is not statistically significantly better than the Non-GA method.")
 
+print(f"The test of {target} is finished.")
 #%%
 
 
