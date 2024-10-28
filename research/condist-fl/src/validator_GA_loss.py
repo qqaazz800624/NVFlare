@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch.amp import autocast
 from losses import MarginalDiceCELoss, ConDistDiceLoss
+from loss_evidential import MarginalEvidentialLoss
 from utils.get_model import get_model
 
 def get_fg_classes(fg_idx, classes):
@@ -52,6 +53,7 @@ class Validator_loss(object):
         self.condist_loss_fn = ConDistDiceLoss(
             self.num_classes, foreground, background, temperature=temperature, smooth_nr=0.0, batch=True
         )
+        self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
         self.losses = []
     
     def update_condist_weight(self, current_round):
@@ -68,7 +70,7 @@ class Validator_loss(object):
         batch["preds"] = self.inferer(batch["image"], model)
 
         # Run global model's inference
-        batch["targets"] = self.inferer(batch["image"], global_model)
+        #batch["targets"] = self.inferer(batch["image"], global_model)
         
         # print('validation batch["targets"].shape: ', batch["targets"].shape)
         # print('validation batch["preds"].shape: ', batch["preds"].shape)
@@ -80,9 +82,12 @@ class Validator_loss(object):
         # calculate loss
         #loss = self.loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
         marginal_loss = self.marginal_loss_fn(batch["preds"], batch["label"])  
-        condist_loss = self.condist_loss_fn(batch["preds"], batch["targets"], batch["label"])
-        self.update_condist_weight(current_round)
-        loss = marginal_loss + self.weight * condist_loss
+        marginal_evidential_loss = self.evidential_loss_fn(batch["preds"], batch["label"])
+        #condist_loss = self.condist_loss_fn(batch["preds"], batch["targets"], batch["label"])
+        #self.update_condist_weight(current_round)
+        #loss = marginal_loss + self.weight * condist_loss
+        #loss = marginal_loss
+        loss = marginal_loss + marginal_evidential_loss
         self.losses.append(loss.detach().cpu())
 
 
