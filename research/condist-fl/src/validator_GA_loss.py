@@ -48,11 +48,11 @@ class Validator_loss(object):
         
         #self.loss_fn = DiceLoss(include_background=False, reduction='none', softmax=True)
         self.marginal_loss_fn = MarginalDiceCELoss(foreground, softmax=True, smooth_nr=0.0, batch=True)
-        self.ds_loss_fn = DeepSupervisionLoss(self.marginal_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
-        self.loss_fn = DiceCELoss(include_background=False, reduction='mean', softmax=True)
-        self.condist_loss_fn = ConDistDiceLoss(
-            self.num_classes, foreground, background, temperature=temperature, smooth_nr=0.0, batch=True
-        )
+        #self.ds_loss_fn = DeepSupervisionLoss(self.marginal_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
+        #self.loss_fn = DiceCELoss(include_background=False, reduction='mean', softmax=True)
+        # self.condist_loss_fn = ConDistDiceLoss(
+        #     self.num_classes, foreground, background, temperature=temperature, smooth_nr=0.0, batch=True
+        # )
         self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
         self.losses = []
     
