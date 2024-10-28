@@ -50,18 +50,7 @@ class MarginalEvidentialLoss(_Loss):
     def __init__(
         self,
         foreground: Sequence[int],
-        include_background: bool = True,
-        softmax: bool = False,
-        other_act: Optional[Callable] = None,
-        squared_pred: bool = False,
-        jaccard: bool = False,
-        reduction: str = "mean",
-        smooth_nr: float = 1e-5,
-        smooth_dr: float = 1e-5,
-        batch: bool = False,
-        ce_weight: Optional[Tensor] = None,
-        lambda_dice: float = 1.0,
-        lambda_ce: float = 1.0,
+        softmax: bool = False
     ):
         super().__init__()
 
