@@ -56,11 +56,11 @@ class Validator_loss(object):
         self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
         self.losses = []
     
-    def update_condist_weight(self, current_round):
-        left = min(self.weight_range)
-        right = max(self.weight_range)
-        intv = (right - left) / (self.max_rounds - 1)
-        self.weight = left + intv * current_round
+    # def update_condist_weight(self, current_round):
+    #     left = min(self.weight_range)
+    #     right = max(self.weight_range)
+    #     intv = (right - left) / (self.max_rounds - 1)
+    #     self.weight = left + intv * current_round
 
     def validate_step(self, model: torch.nn.Module, batch: Dict[str, Any], global_model: torch.nn.Module, current_round) -> None:
         batch["image"] = batch["image"].to("cuda:0")
@@ -82,7 +82,7 @@ class Validator_loss(object):
         # calculate loss
         #loss = self.loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
         marginal_loss = self.marginal_loss_fn(batch["preds"], batch["label"])  
-        marginal_evidential_loss = self.evidential_loss_fn(batch["preds"], batch["label"])
+        marginal_evidential_loss = self.evidential_loss_fn(batch["preds"], batch["label"], current_round)
         #condist_loss = self.condist_loss_fn(batch["preds"], batch["targets"], batch["label"])
         #self.update_condist_weight(current_round)
         #loss = marginal_loss + self.weight * condist_loss
