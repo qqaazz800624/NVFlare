@@ -20,6 +20,7 @@ import torch
 import torch.amp
 import torch.nn as nn
 from losses import ConDistDiceLoss, MarginalDiceCELoss
+from loss_evidential import MarginalEvidentialLoss, AdaptiveDeepSupervisionLoss
 from monai.losses import DeepSupervisionLoss
 from torch.optim import SGD, AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
@@ -50,6 +51,8 @@ class ConDistTrainer(object):
         )
         self.marginal_loss_fn = MarginalDiceCELoss(foreground, softmax=True, smooth_nr=0.0, batch=True)
         self.ds_loss_fn = DeepSupervisionLoss(self.marginal_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
+        self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
+        self.ds_evidential_loss_fn = AdaptiveDeepSupervisionLoss(self.evidential_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
 
         self.current_step = 0
         self.current_round = 0
@@ -79,15 +82,18 @@ class ConDistTrainer(object):
         label = batch["label"].to(device)
 
         preds = model(image)
-        #print('training preds.shape: ', preds.shape)
+        
+        # if preds.dim() == 6:
+        #     preds_evidential = preds[:, 0, ::]
+        # print('preds_evidential.shape: ', preds_evidential.shape)
+        # print('label.shape: ', label.shape)
+        #evidential_loss = self.evidential_loss_fn(preds_evidential, label, self.current_round)
 
         if preds.dim() == 6:
             preds = [preds[:, i, ::] for i in range(preds.shape[1])]
         
-        # print('training len(preds): ', len(preds))
-        # print('training preds[0].shape: ', preds[0].shape)
-        
         ds_loss = self.ds_loss_fn(preds, label)
+        ds_evidential_loss = self.ds_evidential_loss_fn(preds, label, self.current_round)
 
         with torch.no_grad():
             targets = self.global_model(image)
@@ -98,7 +104,7 @@ class ConDistTrainer(object):
         # print('training label.shape: ', label.shape)
         condist_loss = self.condist_loss_fn(preds[0], targets, label)
 
-        loss = ds_loss + self.weight * condist_loss
+        loss = ds_loss + ds_evidential_loss + self.weight * condist_loss
 
         # Log training information
         if self.logger is not None:
