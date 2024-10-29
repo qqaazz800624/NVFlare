@@ -9,6 +9,8 @@ from monai.utils import LossReduction
 from torch import Tensor
 from torch.nn import functional as F
 from torch.nn.modules.loss import _Loss
+from nvflare.app_common.app_constant import AppConstants
+
 
 
 class MarginalTransform(object):
@@ -50,28 +52,65 @@ class MarginalEvidentialLoss(_Loss):
     def __init__(
         self,
         foreground: Sequence[int],
-        softmax: bool = False
+        softmax: bool = False,
+        kl_weight: float = 1e-2,
+        annealing_step: int = 10
     ):
         super().__init__()
 
         self.transform = MarginalTransform(foreground, softmax=softmax)
+        self.kl_weight = kl_weight
+        self.annealing_step = annealing_step
+        self.smooth = 1e-5
         
+    def kl_divergence(self, alpha):
+        shape = list(alpha.shape)
+        shape[0] = 1
+        ones = torch.ones(tuple(shape)).cuda()
 
-    def forward(self, preds: Tensor, targets: Tensor):
-        preds, targets = self.transform(preds, targets)
-        evidence = F.relu(preds)
-        alpha = evidence + 1
+        S = torch.sum(alpha, dim=1, keepdim=True) 
+
+        first_term = (torch.lgamma(S)
+                      - torch.lgamma(alpha).sum(dim=1, keepdim=True)
+                      - torch.lgamma(ones.sum(dim=1, keepdim=True))
+                      )
+        
+        second_term = ((alpha - ones).mul(torch.digamma(alpha) - torch.digamma(S)).sum(dim=1, keepdim=True))
+        kl = first_term + second_term
+
+        return kl.mean() 
+    
+
+    def forward(self, logits: Tensor, targets: Tensor, current_round: int):
+        C = logits.shape[1]
+        logits, targets = self.transform(logits, targets)
+        evidence = F.relu(logits)
+        alpha = (evidence + 1)**2
         S = torch.sum(alpha, dim=1, keepdim=True)
         rho = alpha / S
-        dims = tuple(range(2, preds.ndim))
 
-        numerator = (rho * targets).sum(dim=dims)
-        denom1 = (targets ** 2).sum(dim=dims)
-        denom2 = (rho ** 2).sum(dim=dims)
-        denom3 = ((rho * (1 - rho)) / S).sum(dim=dims)
+        # Task loss (Evidential Dice Loss)
+        dice_score = 0
+        for class_idx in range(logits.shape[1]):
+            inter = (rho[:,class_idx,...] * targets[:,class_idx,...]).sum()
+            union = (rho[:,class_idx,...] ** 2).sum() + (targets[:,class_idx,...] ** 2).sum() + (rho[:,class_idx,...]*(1-rho[:,class_idx,...])/(S[:,0,...]+1)).sum()
+            dice_score += (2*inter + self.smooth) / (union + self.smooth)
+        loss_task = 1 - dice_score/logits.shape[1]
 
-        dice = torch.mean(2 * numerator / (denom1 + denom2 + denom3 + 1e-6), dim=1)
-        loss = (1 - dice).mean()
+        # Regularization loss
+        anneling_coef = torch.min(
+            torch.tensor(1.0, dtype=torch.float32),
+            torch.tensor(current_round / self.annealing_step, dtype=torch.float)
+        )
+
+        # KL divergence with uniform prior
+        kl_alpha = targets + (1 - targets) * alpha
+        loss_kl = anneling_coef*self.kl_divergence(kl_alpha)
+        loss_cor = torch.sum(- C/S.detach() * targets * logits) / (logits.shape[0] * logits.shape[2] * logits.shape[3])
+        loss_reg = loss_kl + loss_cor
+
+        # Total loss
+        loss = loss_task + self.kl_weight * loss_reg
 
         return loss
 
@@ -81,16 +120,11 @@ class MarginalEvidentialLoss(_Loss):
 
 # preds = torch.randn(4, 8, 128, 128, 128)
 # targets = torch.randint(0, 8, (4, 1, 128, 128, 128))
-# loss_fn = MarginalEvidentialLoss(foreground=[1, 2, 3, 4, 5, 6, 7], softmax=True)
-# loss = loss_fn(preds, targets)
-# loss
+# current_round = 2
 
+# loss_fn = MarginalEvidentialLoss(foreground=[1, 2])
+# loss = loss_fn(preds, targets, current_round)
 
-
-
-
-
-
-
+# print("loss:", loss.item())
 
 #%%
