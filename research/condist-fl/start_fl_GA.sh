@@ -3,7 +3,7 @@
 export PYTHONPATH=$PWD/src:$PYTHONPATH
 
 nvflare simulator \
-  -w $PWD/workspace_GA_evidential \
+  -w $PWD/workspace_test \
   -c liver,spleen,pancreas,kidney \
-  -gpu 3,0,1,2 \
+  -gpu 4,5,6,7 \
   jobs/condist_GA_evidential
