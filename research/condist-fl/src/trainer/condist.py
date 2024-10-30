@@ -51,8 +51,8 @@ class ConDistTrainer(object):
         )
         self.marginal_loss_fn = MarginalDiceCELoss(foreground, softmax=True, smooth_nr=0.0, batch=True)
         self.ds_loss_fn = DeepSupervisionLoss(self.marginal_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
-        self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
-        self.ds_evidential_loss_fn = AdaptiveDeepSupervisionLoss(self.evidential_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
+        #self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
+        #self.ds_evidential_loss_fn = AdaptiveDeepSupervisionLoss(self.evidential_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
 
         self.current_step = 0
         self.current_round = 0
@@ -93,7 +93,7 @@ class ConDistTrainer(object):
             preds = [preds[:, i, ::] for i in range(preds.shape[1])]
         
         ds_loss = self.ds_loss_fn(preds, label)
-        ds_evidential_loss = self.ds_evidential_loss_fn(preds, label, self.current_round)
+        #ds_evidential_loss = self.ds_evidential_loss_fn(preds, label, self.current_round)
 
         with torch.no_grad():
             targets = self.global_model(image)
@@ -104,7 +104,7 @@ class ConDistTrainer(object):
         # print('training label.shape: ', label.shape)
         condist_loss = self.condist_loss_fn(preds[0], targets, label)
 
-        loss = ds_loss + ds_evidential_loss + self.weight * condist_loss
+        loss = ds_loss + self.weight * condist_loss
 
         # Log training information
         if self.logger is not None:
