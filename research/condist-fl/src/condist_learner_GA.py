@@ -11,7 +11,7 @@ import numpy as np
 from data import DataManager
 from prettytable import PrettyTable
 from torch.utils.tensorboard import SummaryWriter
-from trainer import ConDistTrainer
+from trainer import ConDistTrainer, ConDistEvidentialTrainer
 from utils.get_model import get_model
 from utils.model_weights import extract_weights, load_weights
 #from validator import Validator
@@ -81,7 +81,8 @@ class ConDistLearner(Learner):
 
         # Configure trainer & validator
         if self._method == "ConDist":
-            self.trainer = ConDistTrainer(task_config)
+            #self.trainer = ConDistTrainer(task_config)
+            self.trainer = ConDistEvidentialTrainer(task_config)
         self.validator = Validator(task_config)
         self.validator_loss = Validator_loss(task_config)
 
