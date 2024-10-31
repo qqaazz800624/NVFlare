@@ -100,19 +100,20 @@ class MarginalEvidentialLoss(_Loss):
         loss_task = 1 - dice_score/logits.shape[1]
 
         # Regularization loss
-        anneling_coef = torch.min(
-            torch.tensor(1.0, dtype=torch.float32),
-            torch.tensor(current_round / self.annealing_step, dtype=torch.float)
-        )
+        # anneling_coef = torch.min(
+        #     torch.tensor(1.0, dtype=torch.float32),
+        #     torch.tensor(current_round / self.annealing_step, dtype=torch.float)
+        # )
 
-        # KL divergence with uniform prior
-        kl_alpha = targets + (1 - targets) * alpha
-        loss_kl = anneling_coef*self.kl_divergence(kl_alpha)
-        loss_cor = torch.sum(- C/S.detach() * targets * logits) / (logits.shape[0] * logits.shape[2] * logits.shape[3])
-        loss_reg = loss_kl + loss_cor
+        # # KL divergence with uniform prior
+        # kl_alpha = targets + (1 - targets) * alpha
+        # loss_kl = anneling_coef*self.kl_divergence(kl_alpha)
+        # loss_cor = torch.sum(- C/S.detach() * targets * logits) / (logits.shape[0] * logits.shape[2] * logits.shape[3])
+        # loss_reg = loss_kl + loss_cor
 
         # Total loss
-        loss = loss_task + self.kl_weight * loss_reg
+        #loss = loss_task + self.kl_weight * loss_reg
+        loss = loss_task
 
         return loss
     
