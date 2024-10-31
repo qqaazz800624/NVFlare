@@ -91,29 +91,19 @@ class MarginalEvidentialLoss(_Loss):
         S = torch.sum(alpha, dim=1, keepdim=True)
         rho = alpha / S
 
-        # Task loss (Evidential Dice Loss)
-        dice_score = 0
-        for class_idx in range(logits.shape[1]):
-            inter = (rho[:,class_idx,...] * targets[:,class_idx,...]).sum()
-            union = (rho[:,class_idx,...] ** 2).sum() + (targets[:,class_idx,...] ** 2).sum() + (rho[:,class_idx,...]*(1-rho[:,class_idx,...])/(S[:,0,...]+1)).sum()
-            dice_score += (2*inter + self.smooth) / (union + self.smooth)
-        loss_task = 1 - dice_score/logits.shape[1]
+        # Task loss (Evidential Dice Loss) - Vectorized
+        dims = tuple(range(2, logits.ndim))
 
-        # Regularization loss
-        # anneling_coef = torch.min(
-        #     torch.tensor(1.0, dtype=torch.float32),
-        #     torch.tensor(current_round / self.annealing_step, dtype=torch.float)
-        # )
-
-        # # KL divergence with uniform prior
-        # kl_alpha = targets + (1 - targets) * alpha
-        # loss_kl = anneling_coef*self.kl_divergence(kl_alpha)
-        # loss_cor = torch.sum(- C/S.detach() * targets * logits) / (logits.shape[0] * logits.shape[2] * logits.shape[3])
-        # loss_reg = loss_kl + loss_cor
+        inter = (rho * targets).sum(dim=dims)
+        union = ((rho ** 2).sum(dim=dims) + (targets ** 2).sum(dim=dims) + ((rho * (1 - rho)) / (S + 1)).sum(dim=dims))
+        dice_score = (2 * inter + self.smooth) / (union + self.smooth)
+        loss_dice = 1 - dice_score.mean()
+        
+        # Task loss (Evidential CE Loss)
+        loss_ce = torch.sum(targets * (torch.digamma(S) - torch.digamma(alpha))) / (logits.shape[0] * logits.shape[2] * logits.shape[3] * logits.shape[4])
 
         # Total loss
-        #loss = loss_task + self.kl_weight * loss_reg
-        loss = loss_task
+        loss = loss_dice + loss_ce
 
         return loss
     
