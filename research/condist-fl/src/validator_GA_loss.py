@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from torch.amp import autocast
 from losses import MarginalDiceCELoss, ConDistDiceLoss
-from loss_evidential import MarginalEvidentialLoss
+from loss_evidential import MarginalEvidentialLoss, MaskedEvidentialLoss
 from utils.get_model import get_model
 
 def get_fg_classes(fg_idx, classes):
@@ -48,19 +48,15 @@ class Validator_loss(object):
         
         #self.loss_fn = DiceLoss(include_background=False, reduction='none', softmax=True)
         self.marginal_loss_fn = MarginalDiceCELoss(foreground, softmax=True, smooth_nr=0.0, batch=True)
-        #self.ds_loss_fn = DeepSupervisionLoss(self.marginal_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
-        #self.loss_fn = DiceCELoss(include_background=False, reduction='mean', softmax=True)
-        # self.condist_loss_fn = ConDistDiceLoss(
-        #     self.num_classes, foreground, background, temperature=temperature, smooth_nr=0.0, batch=True
-        # )
         self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
+        self.masked_evidential_loss_fn = MaskedEvidentialLoss(foreground, softmax=False)
         self.losses = []
     
-    # def update_condist_weight(self, current_round):
-    #     left = min(self.weight_range)
-    #     right = max(self.weight_range)
-    #     intv = (right - left) / (self.max_rounds - 1)
-    #     self.weight = left + intv * current_round
+    def update_condist_weight(self, current_round):
+        left = min(self.weight_range)
+        right = max(self.weight_range)
+        intv = (right - left) / (self.max_rounds - 1)
+        self.weight = left + intv * current_round
 
     def validate_step(self, model: torch.nn.Module, batch: Dict[str, Any], global_model: torch.nn.Module, current_round) -> None:
         batch["image"] = batch["image"].to("cuda:0")
@@ -71,10 +67,6 @@ class Validator_loss(object):
 
         # Run global model's inference
         #batch["targets"] = self.inferer(batch["image"], global_model)
-        
-        # print('validation batch["targets"].shape: ', batch["targets"].shape)
-        # print('validation batch["preds"].shape: ', batch["preds"].shape)
-        # print('validation batch["label"].shape: ', batch["label"].shape)
 
         # Post processing
         # batch = self.post(batch)
@@ -82,12 +74,10 @@ class Validator_loss(object):
         # calculate loss
         #loss = self.loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
         marginal_loss = self.marginal_loss_fn(batch["preds"], batch["label"])  
-        marginal_evidential_loss = self.evidential_loss_fn(batch["preds"], batch["label"], current_round)
-        #condist_loss = self.condist_loss_fn(batch["preds"], batch["targets"], batch["label"])
-        #self.update_condist_weight(current_round)
-        #loss = marginal_loss + self.weight * condist_loss
-        #loss = marginal_loss
-        loss = marginal_loss + marginal_evidential_loss
+        #marginal_evidential_loss = self.evidential_loss_fn(batch["preds"], batch["label"], current_round)
+        masked_evidential_loss = self.masked_evidential_loss_fn(batch["preds"], batch["label"])
+        self.update_condist_weight(current_round)
+        loss = marginal_loss + self.weight*masked_evidential_loss
         self.losses.append(loss.detach().cpu())
 
 

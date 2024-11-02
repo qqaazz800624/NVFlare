@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 import torch
+import torch.distributions as dist
 from monai.losses import DiceCELoss, MaskedDiceLoss
 from monai.networks import one_hot
 from monai.utils import LossReduction
@@ -49,6 +50,51 @@ class MarginalTransform(object):
 
         return preds, target
 
+
+class MaskedEvidentialLoss(_Loss):
+    def __init__(
+            self,
+            foreground: Sequence[int],
+            softmax: bool = False,
+            include_background: bool = True,
+            other_act: Optional[Callable] = None,
+            squared_pred: bool = False,
+            jaccard: bool = False,
+            reduction: Union[LossReduction, str] = LossReduction.MEAN,
+            smooth_nr: float = 1e-5,
+            smooth_dr: float = 1e-5,
+            batch: bool = False,
+            uncertainty_quantile_threshold: float = 0.95
+    ):
+        super().__init__()
+        self.transform = MarginalTransform(foreground, softmax=softmax)
+        self.dice = MaskedDiceLoss(
+            include_background=include_background,
+            to_onehot_y=False,
+            sigmoid=False,
+            softmax=False,
+            other_act=other_act,
+            squared_pred=squared_pred,
+            jaccard=jaccard,
+            reduction=reduction,
+            smooth_nr=smooth_nr,
+            smooth_dr=smooth_dr,
+            batch=batch
+        )
+        self.uncertainty_quantile_threshold = uncertainty_quantile_threshold
+
+    def forward(self, logits: Tensor, targets: Tensor):
+
+        logits, targets = self.transform(logits, targets)
+        evidence = F.relu(logits)
+        alpha = evidence + 1
+        total_alpha = torch.sum(alpha, dim=1, keepdim=True)
+        local_uncertainty_aleatoric = torch.sum((alpha / total_alpha) * (torch.digamma(total_alpha + 1) - torch.digamma(alpha + 1)), dim=1, keepdim=True)
+        uncertainty_normalized = (local_uncertainty_aleatoric - local_uncertainty_aleatoric.min()) / (local_uncertainty_aleatoric.max() - local_uncertainty_aleatoric.min())
+        mask_uncertainty = torch.where(uncertainty_normalized > self.uncertainty_quantile_threshold, torch.ones_like(uncertainty_normalized), torch.zeros_like(uncertainty_normalized))
+        masked_dice = self.dice(logits, targets, mask=mask_uncertainty)
+
+        return masked_dice
 
 class MarginalEvidentialLoss(_Loss):
     def __init__(
