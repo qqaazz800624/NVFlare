@@ -27,7 +27,7 @@ python run_infer_task.py \
   --data_list_key testing \
   --model best_${MODEL_NAME}_model.pt \
   --output infer \
-  --model_type MedNeXt \
+  --model_type nnUNet \
   --client_name "${MODEL_NAME}"
 
 python run_infer_task.py \
@@ -36,5 +36,5 @@ python run_infer_task.py \
   --data_list_key testing \
   --model best_${MODEL_NAME}_model_GA.pt \
   --output infer_GA \
-  --model_type MedNeXt \
+  --model_type nnUNet \
   --client_name "${MODEL_NAME}"

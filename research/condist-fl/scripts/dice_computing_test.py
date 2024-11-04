@@ -102,20 +102,20 @@ def dice_compute(seg_mask, label):
     return dice_score
 
 #%%
-target = 'kidney'
+target = 'pancreas_tumor'
 
 data_dir = data_dir_dict[target]
 data_root = f"/neodata/open_dataset/ConDistFL/data/{data_dir}"
 data_list = f"/neodata/open_dataset/ConDistFL/data/{data_dir}/datalist.json"
 
-methods = ['GA', 'ConDist']
+methods = ['GA', 'Test']
 
 for method in methods:
     
     if method == 'GA':
         home_dir = "/home/u/qqaazz800624/NVFlare/research/condist-fl/infer_GA"
     else:
-        home_dir = "/home/u/qqaazz800624/NVFlare/research/condist-fl/infer"
+        home_dir = "/home/u/qqaazz800624/NVFlare/research/condist-fl/infer_test"
 
     target_class = label_class_dict[target]
     data_prefix = data_prefix_dict[target]
@@ -153,19 +153,20 @@ import numpy as np
 with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/infer_GA/dice_scores.json", "r") as f:
     dice_scores_GA = json.load(f)
 
-with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/infer/dice_scores.json", "r") as f:
-    dice_scores = json.load(f)
+with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/infer_test/dice_scores.json", "r") as f:
+    dice_scores_test = json.load(f)
 
 
 print("The mean of GA method:", np.round(np.mean(dice_scores_GA), 4))
-print("The mean of Non-GA method:", np.round(np.mean(dice_scores), 4))
+print("The mean of test method:", np.round(np.mean(dice_scores_test), 4))
 
 #%%
 
 import numpy as np
 from scipy import stats
 
-differences = np.array(dice_scores_GA) - np.array(dice_scores)
+
+differences = np.array(dice_scores_test) - np.array(dice_scores_GA)
 
 # Check the normality with Shapiro-Wilk test
 w, p_value = stats.shapiro(differences)
@@ -182,7 +183,7 @@ else:
 
 # Wilcoxon signed-rank test
 
-stat, p_value = stats.wilcoxon(dice_scores_GA, dice_scores, alternative='greater')
+stat, p_value = stats.wilcoxon(dice_scores_test, dice_scores_GA, alternative='greater')
 
 print("p-value of Wilcoxon signed-rank test", p_value)
 print("statistic of Wilcoxon signed-rank test", stat)
@@ -191,10 +192,10 @@ alpha = 0.05
 
 if p_value < alpha:
     print("Reject the null hypothesis.")
-    print("The GA method is statistically significantly better than the Non-GA method.")
+    print("The test method is statistically significantly better than the GA method.")
 else:
     print("Cannot reject the null hypothesis.")
-    print("The GA method is not statistically significantly better than the Non-GA method.")
+    print("The test method is not statistically significantly better than the GA method.")
 
 print(f"The test of {target} is finished.")
 #%%
