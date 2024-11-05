@@ -24,18 +24,29 @@ else:
 
 #%%
 
+import json 
+import numpy as np
 
+with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/infer_GA/dice_scores.json", "r") as f:
+    dice_scores_GA = json.load(f)
 
+with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/infer/dice_scores.json", "r") as f:
+    dice_scores = json.load(f)
 
 
 
 #%%
 
+dice_scores_dict = {}
 
+dice_scores_dict["GA"] = dice_scores_GA
+dice_scores_dict["Non-GA"] = dice_scores
 
+print(dice_scores_dict["GA"])
+print(dice_scores_dict["Non-GA"])
 
-
-
+with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/scripts/dice_scores_dict.json", "w") as f:
+    json.dump(dice_scores_dict, f)
 
 
 #%%
