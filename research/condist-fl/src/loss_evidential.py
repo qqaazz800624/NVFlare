@@ -64,7 +64,7 @@ class MaskedEvidentialLoss(_Loss):
             smooth_nr: float = 1e-5,
             smooth_dr: float = 1e-5,
             batch: bool = False,
-            uncertainty_quantile_threshold: float = 0.95
+            uncertainty_quantile_threshold: float = 0.90
     ):
         super().__init__()
         self.transform = MarginalTransform(foreground, softmax=softmax)
@@ -82,6 +82,7 @@ class MaskedEvidentialLoss(_Loss):
             batch=batch
         )
         self.uncertainty_quantile_threshold = uncertainty_quantile_threshold
+        self.smooth_nr = smooth_nr
 
     def forward(self, logits: Tensor, targets: Tensor):
 
@@ -90,7 +91,14 @@ class MaskedEvidentialLoss(_Loss):
         alpha = evidence + 1
         total_alpha = torch.sum(alpha, dim=1, keepdim=True)
         local_uncertainty_aleatoric = torch.sum((alpha / total_alpha) * (torch.digamma(total_alpha + 1) - torch.digamma(alpha + 1)), dim=1, keepdim=True)
-        uncertainty_normalized = (local_uncertainty_aleatoric - local_uncertainty_aleatoric.min()) / (local_uncertainty_aleatoric.max() - local_uncertainty_aleatoric.min())
+        local_uncertainty_epistemic = torch.sum(torch.lgamma(alpha) - torch.lgamma(total_alpha) - (alpha - 1)*(torch.digamma(alpha) - torch.digamma(total_alpha)), dim=1, keepdim=True)
+        local_uncertainty = local_uncertainty_aleatoric + local_uncertainty_epistemic
+
+        if (local_uncertainty.max() - local_uncertainty.min()) == 0:
+            uncertainty_normalized = (local_uncertainty - local_uncertainty.min() + self.smooth_nr) / (local_uncertainty.max() - local_uncertainty.min() + self.smooth_nr)
+        else:
+            uncertainty_normalized = (local_uncertainty - local_uncertainty.min()) / (local_uncertainty.max() - local_uncertainty.min())
+        
         mask_uncertainty = torch.where(uncertainty_normalized > self.uncertainty_quantile_threshold, torch.ones_like(uncertainty_normalized), torch.zeros_like(uncertainty_normalized))
         masked_dice = self.dice(logits, targets, mask=mask_uncertainty)
 
