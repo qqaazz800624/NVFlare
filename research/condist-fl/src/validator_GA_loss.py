@@ -49,7 +49,7 @@ class Validator_loss(object):
         #self.loss_fn = DiceLoss(include_background=False, reduction='none', softmax=True)
         self.marginal_loss_fn = MarginalDiceCELoss(foreground, softmax=True, smooth_nr=0.0, batch=True)
         self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
-        self.masked_evidential_loss_fn = MaskedEvidentialLoss(foreground, softmax=False)
+        self.masked_evidential_loss_fn = MaskedEvidentialLoss(foreground, softmax=True)
         self.losses = []
     
     def update_condist_weight(self, current_round):

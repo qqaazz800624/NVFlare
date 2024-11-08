@@ -53,7 +53,7 @@ class ConDistEvidentialTrainer(object):
         self.ds_loss_fn = DeepSupervisionLoss(self.marginal_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
         self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
         self.ds_evidential_loss_fn = AdaptiveDeepSupervisionLoss(self.evidential_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
-        self.masked_evidential_loss_fn = MaskedEvidentialLoss(foreground, softmax=False)
+        self.masked_evidential_loss_fn = MaskedEvidentialLoss(foreground, softmax=True)
         self.ds_masked_evidential_loss_fn = DeepSupervisionLoss(self.masked_evidential_loss_fn, weights=[0.5333, 0.2667, 0.1333, 0.0667])
 
         self.current_step = 0
