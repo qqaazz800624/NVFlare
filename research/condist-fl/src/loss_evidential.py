@@ -61,8 +61,8 @@ class MaskedEvidentialLoss(_Loss):
             squared_pred: bool = False,
             jaccard: bool = False,
             reduction: Union[LossReduction, str] = LossReduction.MEAN,
-            smooth_nr: float = 1e-5,
-            smooth_dr: float = 1e-5,
+            smooth_nr: float = 1e-7,
+            smooth_dr: float = 1e-7,
             batch: bool = False,
             uncertainty_quantile_threshold: float = 0.90
     ):
@@ -87,15 +87,10 @@ class MaskedEvidentialLoss(_Loss):
     def forward(self, logits: Tensor, targets: Tensor):
 
         logits, targets = self.transform(logits, targets)
-        log_logits = torch.log(logits + self.smooth_nr)
-        local_uncertainty = torch.sum(logits * log_logits, dim=1, keepdim=True)
-        # evidence = F.relu(logits)
-        # alpha = evidence + 1
-        # total_alpha = torch.sum(alpha, dim=1, keepdim=True)
-        # #local_uncertainty_aleatoric = torch.sum((alpha / total_alpha) * (torch.digamma(total_alpha + 1) - torch.digamma(alpha + 1)), dim=1, keepdim=True)
-        # local_uncertainty_epistemic = torch.sum(torch.lgamma(alpha) - torch.lgamma(total_alpha) - (alpha - 1)*(torch.digamma(alpha) - torch.digamma(total_alpha)), dim=1, keepdim=True)
-        # #local_uncertainty = local_uncertainty_aleatoric + local_uncertainty_epistemic
-        # local_uncertainty = local_uncertainty_epistemic
+        alpha = torch.exp(logits)
+        total_alpha = torch.sum(alpha, dim=1, keepdim=True)
+        expected_p = alpha / total_alpha
+        local_uncertainty = - torch.sum(expected_p * torch.log(expected_p + self.smooth_nr), dim=1, keepdim=True)
 
         if (local_uncertainty.max() - local_uncertainty.min()) == 0:
             uncertainty_normalized = (local_uncertainty - local_uncertainty.min() + self.smooth_nr) / (local_uncertainty.max() - local_uncertainty.min() + self.smooth_nr)
@@ -120,47 +115,30 @@ class MarginalEvidentialLoss(_Loss):
         self.transform = MarginalTransform(foreground, softmax=softmax)
         self.kl_weight = kl_weight
         self.annealing_step = annealing_step
-        self.smooth = 1e-5
-        
-    def kl_divergence(self, alpha):
-        shape = list(alpha.shape)
-        shape[0] = 1
-        ones = torch.ones(tuple(shape)).cuda()
-
-        S = torch.sum(alpha, dim=1, keepdim=True) 
-
-        first_term = (torch.lgamma(S)
-                      - torch.lgamma(alpha).sum(dim=1, keepdim=True)
-                      - torch.lgamma(ones.sum(dim=1, keepdim=True))
-                      )
-        
-        second_term = ((alpha - ones).mul(torch.digamma(alpha) - torch.digamma(S)).sum(dim=1, keepdim=True))
-        kl = first_term + second_term
-
-        return kl.mean() 
-    
+        self.smooth = 1e-7    
 
     def forward(self, logits: Tensor, targets: Tensor, current_round: int):
-        C = logits.shape[1]
-        logits, targets = self.transform(logits, targets)
-        evidence = F.relu(logits)
-        alpha = (evidence + 1)**2
-        S = torch.sum(alpha, dim=1, keepdim=True)
-        rho = alpha / S
-
-        # Task loss (Evidential Dice Loss) - Vectorized
-        dims = tuple(range(2, logits.ndim))
-
-        inter = (rho * targets).sum(dim=dims)
-        union = ((rho ** 2).sum(dim=dims) + (targets ** 2).sum(dim=dims) + ((rho * (1 - rho)) / (S + 1)).sum(dim=dims))
-        dice_score = (2 * inter + self.smooth) / (union + self.smooth)
-        loss_dice = 1 - dice_score.mean()
         
-        # Task loss (Evidential CE Loss)
-        loss_ce = torch.sum(targets * (torch.digamma(S) - torch.digamma(alpha))) / (logits.shape[0] * logits.shape[2] * logits.shape[3] * logits.shape[4])
+        logits, targets = self.transform(logits, targets)
 
-        # Total loss
-        loss = loss_dice + loss_ce
+        alpha = torch.exp(logits)
+        total_alpha = torch.sum(alpha, dim=1, keepdim=True)
+
+        # Negative Loglikelihood Loss (NLL)
+        loss_nll = torch.sum(targets*(torch.log(total_alpha + self.smooth) - torch.log(alpha + self.smooth)), dim=(1, 2, 3, 4)).mean()
+
+        # KL Divergence Loss
+        uniform_bata = torch.ones(1, logits.shape[1]).cuda()
+        uniform_bata.requires_grad = False
+        total_uniform_beta = torch.sum(uniform_bata, dim=1)
+        new_alpha = targets + (1 - targets) * alpha
+        new_total_alpha = torch.sum(new_alpha, dim=1)
+        loss_KL = torch.sum(
+            torch.lgamma(new_total_alpha) - torch.lgamma(total_uniform_beta) - torch.sum(torch.lgamma(new_alpha), dim=1) \
+            + torch.sum((new_alpha - 1) * (torch.digamma(new_alpha) - torch.digamma(new_total_alpha.unsqueeze(1))), dim=1)
+        ) / logits.shape[0]
+
+        loss = loss_nll + loss_KL
 
         return loss
     
