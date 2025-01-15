@@ -46,7 +46,7 @@ class Validator_loss(object):
 
         self.weight_range = task_config["condist_config"]["weight_schedule_range"]
         
-        #self.loss_fn = DiceLoss(include_background=False, reduction='none', softmax=True)
+        #self.marginal_loss_fn = DiceLoss(include_background=False, reduction='none', softmax=True)
         self.marginal_loss_fn = MarginalDiceCELoss(foreground, softmax=True, smooth_nr=0.0, batch=True)
         self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
         self.masked_evidential_loss_fn = MaskedEvidentialLoss(foreground, softmax=True)
@@ -75,9 +75,9 @@ class Validator_loss(object):
         #loss = self.loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
         marginal_loss = self.marginal_loss_fn(batch["preds"], batch["label"])  
         #marginal_evidential_loss = self.evidential_loss_fn(batch["preds"], batch["label"], current_round)
-        masked_evidential_loss = self.masked_evidential_loss_fn(batch["preds"], batch["label"])
+        #masked_evidential_loss = self.masked_evidential_loss_fn(batch["preds"], batch["label"])
         self.update_condist_weight(current_round)
-        loss = marginal_loss + self.weight*masked_evidential_loss
+        loss = marginal_loss 
         self.losses.append(loss.detach().cpu())
 
 

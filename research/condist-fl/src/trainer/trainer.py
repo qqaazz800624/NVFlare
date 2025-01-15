@@ -34,7 +34,7 @@ class Trainer(object):
         self.max_rounds = task_config["training"]["max_rounds"]
 
         self.use_half_precision = task_config["training"].get("use_half_precision", False)
-        self.scaler = torch.cuda.amp.GradScaler(enabled=self.use_half_precision)
+        self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_half_precision)
 
         num_classes = len(task_config["classes"])
         foreground = task_config["condist_config"]["foreground"]

@@ -96,7 +96,7 @@ class ConDistEvidentialTrainer(object):
         
         ds_loss = self.ds_loss_fn(preds, label)
         #ds_evidential_loss = self.ds_evidential_loss_fn(preds, label, self.current_round)
-        masked_evidential_loss = self.masked_evidential_loss_fn(preds[0], label)
+        #masked_evidential_loss = self.masked_evidential_loss_fn(preds[0], label)
         #ds_masked_evidential_loss = self.ds_masked_evidential_loss_fn(preds, label)
 
         with torch.no_grad():
@@ -106,7 +106,7 @@ class ConDistEvidentialTrainer(object):
         condist_loss = self.condist_loss_fn(preds[0], targets, label)
 
         #loss = ds_loss + ds_evidential_loss + self.weight * condist_loss
-        loss = ds_loss + self.weight * masked_evidential_loss + self.weight * condist_loss
+        loss = ds_loss + self.weight * condist_loss
 
         # Log training information
         if self.logger is not None:
