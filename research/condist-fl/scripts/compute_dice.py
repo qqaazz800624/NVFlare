@@ -42,9 +42,9 @@ def main(preds_dir: str, label_dir: str, device: str = "cuda:0"):
         t_data = torch.from_numpy(t_data).to(device)
 
         # Merge tumor labels to organ
-        p_data = torch.where(p_data == 2, 1, p_data)
-        p_data = torch.where(p_data == 5, 4, p_data)
-        p_data = torch.where(p_data == 7, 6, p_data)
+        p_data = torch.where(p_data == 2, 1, p_data)  # liver tumor -> liver
+        p_data = torch.where(p_data == 5, 4, p_data)  # pancreas tumor -> pancreas
+        p_data = torch.where(p_data == 7, 6, p_data)  # kidney tumor -> kidney
 
         # Kidney, Liver, Pancreas, Spleen
         row = [case]

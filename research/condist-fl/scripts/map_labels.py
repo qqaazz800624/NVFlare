@@ -4,15 +4,16 @@ from pathlib import Path
 
 import nibabel as nib
 import numpy as np
+from tqdm import tqdm
 
 
 if __name__ == "__main__":
     mapping = {
-        1: 3,
-        2: 6,
-        3: 6,
-        6: 1,
-        10: 4
+        1: 3,   # Spleen
+        2: 6,   # Kidney
+        3: 6,   # Kidney
+        6: 1,   # Liver 
+        10: 4   # Pancreas
     }
     for i in range(30):
         mapping.setdefault(i, 0)
@@ -24,7 +25,7 @@ if __name__ == "__main__":
     datalist = {}
     for split in ["training", "validation"]:
         datalist[split] = []
-        for case in dataset[split]:
+        for case in tqdm(dataset[split]):
             seg_name = Path(case["label"]).name.replace("amos", "LB_AMOS")
 
             # Convert label format before upload

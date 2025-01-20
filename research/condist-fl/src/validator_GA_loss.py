@@ -48,8 +48,11 @@ class Validator_loss(object):
         
         #self.marginal_loss_fn = DiceLoss(include_background=False, reduction='none', softmax=True)
         self.marginal_loss_fn = MarginalDiceCELoss(foreground, softmax=True, smooth_nr=0.0, batch=True)
-        self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
-        self.masked_evidential_loss_fn = MaskedEvidentialLoss(foreground, softmax=True)
+        #self.evidential_loss_fn = MarginalEvidentialLoss(foreground, softmax=False)
+        #self.masked_evidential_loss_fn = MaskedEvidentialLoss(foreground, softmax=True)
+        self.condist_loss_fn = ConDistDiceLoss(
+            self.num_classes, foreground, background, temperature=temperature, smooth_nr=0.0, batch=True
+        )
         self.losses = []
     
     def update_condist_weight(self, current_round):
@@ -66,7 +69,7 @@ class Validator_loss(object):
         batch["preds"] = self.inferer(batch["image"], model)
 
         # Run global model's inference
-        #batch["targets"] = self.inferer(batch["image"], global_model)
+        batch["targets"] = self.inferer(batch["image"], global_model)
 
         # Post processing
         # batch = self.post(batch)
@@ -74,10 +77,12 @@ class Validator_loss(object):
         # calculate loss
         #loss = self.loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
         marginal_loss = self.marginal_loss_fn(batch["preds"], batch["label"])  
+
+        condist_loss = self.condist_loss_fn(batch["preds"], batch["targets"], batch["label"])
         #marginal_evidential_loss = self.evidential_loss_fn(batch["preds"], batch["label"], current_round)
         #masked_evidential_loss = self.masked_evidential_loss_fn(batch["preds"], batch["label"])
         self.update_condist_weight(current_round)
-        loss = marginal_loss 
+        loss = marginal_loss + (-self.weight * condist_loss)
         self.losses.append(loss.detach().cpu())
 
 
