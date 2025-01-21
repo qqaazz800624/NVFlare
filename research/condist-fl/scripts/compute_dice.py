@@ -27,7 +27,7 @@ def compute_dice(
 
     return dice.cpu().item()
 
-def main(preds_dir: str, label_dir: str, device: str = "cuda:0"):
+def main(preds_dir: str, label_dir: str, device: str = "cuda:3"):
     metrics = []
 
     targets = list(Path(label_dir).glob("LB*.gz"))

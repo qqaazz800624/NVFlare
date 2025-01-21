@@ -20,8 +20,8 @@ python run_infer.py \
   --data_root /data2/open_dataset/AMOS22 \
   --data_list /data2/open_dataset/AMOS22/amos22_ct.json \
   --data_list_key training \
-  --model best_${MODEL_NAME}_model.pt \
-  --output infer_amos \
+  --model best_${MODEL_NAME}_model_GA.pt \
+  --output infer_GA_amos \
   --model_type nnUNet   # nnUNet or MedNeXt
 
 echo "Processing validation data"
@@ -30,6 +30,6 @@ python run_infer.py \
   --data_root /data2/open_dataset/AMOS22 \
   --data_list /data2/open_dataset/AMOS22/amos22_ct.json \
   --data_list_key validation \
-  --model best_${MODEL_NAME}_model.pt \
-  --output infer_amos \
+  --model best_${MODEL_NAME}_model_GA.pt \
+  --output infer_GA_amos \
   --model_type nnUNet   # nnUNet or MedNeXt

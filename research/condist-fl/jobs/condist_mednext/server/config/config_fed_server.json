@@ -38,10 +38,9 @@
         "device": "cpu",
         "source_model": "model",
         "optimizer_args": {
-          "path": "torch.optim.SGD",
+          "path": "torch.optim.AdamW",
           "args": {
-            "lr": 1.0,
-            "momentum": 0.6
+            "lr": 1e-3
           },
           "config_type": "dict"
         },
