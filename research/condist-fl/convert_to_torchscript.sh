@@ -10,7 +10,7 @@ CUDA_DEVICE=${2:-$DEFAULT_CUDA_DEVICE}
 export CUDA_VISIBLE_DEVICES=$CUDA_DEVICE
 
 # Set default site to evaluate
-DEFAULT_SITE="spleen"     # server, kidney, liver, pancreas, spleen
+DEFAULT_SITE="server"     # server, kidney, liver, pancreas, spleen
 
 # Allow overriding the default site with a command-line argument
 SITE=${1:-$DEFAULT_SITE}
