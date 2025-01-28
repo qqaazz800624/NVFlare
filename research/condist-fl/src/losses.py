@@ -15,7 +15,7 @@
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 import torch
-from monai.losses import DiceCELoss, MaskedDiceLoss
+from monai.losses import DiceCELoss, MaskedDiceLoss, DiceLoss
 from monai.networks import one_hot
 from monai.utils import LossReduction
 from torch import Tensor
@@ -208,6 +208,47 @@ class MarginalDiceCELoss(_Loss):
     def forward(self, preds: Tensor, targets: Tensor):
         preds, targets = self.transform(preds, targets)
         return self.dice_ce(preds, targets)
+    
+class MarginalDiceLoss(_Loss):
+    def __init__(
+        self,
+        foreground: Sequence[int],
+        include_background: bool = True,
+        softmax: bool = False,
+        other_act: Optional[Callable] = None,
+        squared_pred: bool = False,
+        jaccard: bool = False,
+        reduction: str = "mean",
+        smooth_nr: float = 1e-5,
+        smooth_dr: float = 1e-5,
+        batch: bool = False,
+        ce_weight: Optional[Tensor] = None,
+        lambda_dice: float = 1.0,
+        lambda_ce: float = 1.0,
+    ):
+        super().__init__()
+
+        self.transform = MarginalTransform(foreground, softmax=softmax)
+        self.dice = DiceLoss(
+            include_background=include_background,
+            to_onehot_y=False,
+            sigmoid=False,
+            softmax=False,
+            other_act=other_act,
+            squared_pred=squared_pred,
+            jaccard=jaccard,
+            reduction=reduction,
+            smooth_nr=smooth_nr,
+            smooth_dr=smooth_dr,
+            batch=batch,
+            ce_weight=ce_weight,
+            lambda_dice=lambda_dice,
+            lambda_ce=lambda_ce,
+        )
+
+    def forward(self, preds: Tensor, targets: Tensor):
+        preds, targets = self.transform(preds, targets)
+        return self.dice(preds, targets)
 
 
 class MoonContrasiveLoss(torch.nn.Module):

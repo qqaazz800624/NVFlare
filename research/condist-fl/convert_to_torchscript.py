@@ -50,6 +50,7 @@ def run_convert(args):
     model = model.eval()
 
     sample_data = torch.rand([1, 1, 224, 224, 64])
+    #sample_data = torch.rand([1, 1, 128, 128, 128])
     traced_module = torch.jit.trace(model, sample_data)
 
     torch.jit.save(traced_module, args.output)
