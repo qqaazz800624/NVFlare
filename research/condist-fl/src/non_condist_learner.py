@@ -37,7 +37,7 @@ from nvflare.app_common.abstract.learner_spec import Learner
 from nvflare.app_common.app_constant import AppConstants, ModelName, ValidateType
 
 
-class ConDistLearner(Learner):
+class NonConDistLearner(Learner):
     def __init__(
         self,
         task_config: str,
@@ -87,8 +87,8 @@ class ConDistLearner(Learner):
 
         # Configure trainer & validator
         if self._method == "ConDist":
-            self.trainer = ConDistTrainer(task_config)
-            #self.trainer = Trainer(task_config)
+            #self.trainer = ConDistTrainer(task_config)
+            self.trainer = Trainer(task_config)
         self.validator = Validator(task_config)
 
         # Create logger

@@ -78,11 +78,12 @@ class Validator_loss(object):
         #loss = self.loss_fn(batch["preds"], batch["label"])  # loss shape: [N, num_classes -1]
         marginal_loss = self.marginal_loss_fn(batch["preds"], batch["label"])  
 
-        condist_loss = self.condist_loss_fn(batch["preds"], batch["targets"], batch["label"])
+        #condist_loss = self.condist_loss_fn(batch["preds"], batch["targets"], batch["label"])
         #marginal_evidential_loss = self.evidential_loss_fn(batch["preds"], batch["label"], current_round)
         #masked_evidential_loss = self.masked_evidential_loss_fn(batch["preds"], batch["label"])
-        self.update_condist_weight(current_round)
-        loss = marginal_loss + (-self.weight * condist_loss)
+        #self.update_condist_weight(current_round)
+        #loss = marginal_loss + (-self.weight * condist_loss)
+        loss = marginal_loss
         self.losses.append(loss.detach().cpu())
 
 
