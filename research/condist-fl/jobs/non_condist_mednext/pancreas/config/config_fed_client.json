@@ -20,12 +20,12 @@
   "components": [
     {
       "id": "learner",
-      "path": "condist_learner.ConDistLearner",
+      "path": "non_condist_learner.NonConDistLearner",
       "args": {
         "task_config": "config/config_task.json",
         "data_config": "config/config_data.json",
         "aggregation_steps": 1000,
-        "method": "ConDist"
+        "method": "NonConDist"
       }
     }
   ]
