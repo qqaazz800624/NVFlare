@@ -88,7 +88,9 @@ class ConDistLearner(Learner):
         # Configure trainer & validator
         if self._method == "ConDist":
             self.trainer = ConDistTrainer(task_config)
-            #self.trainer = Trainer(task_config)
+        else:
+            self.trainer = Trainer(task_config)
+            
         self.validator = Validator(task_config)
 
         # Create logger
