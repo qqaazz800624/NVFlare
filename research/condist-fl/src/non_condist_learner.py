@@ -90,6 +90,7 @@ class NonConDistLearner(Learner):
             self.trainer = ConDistTrainer(task_config)
         else:
             self.trainer = Trainer(task_config)
+            
         self.validator = Validator(task_config)
 
         # Create logger
