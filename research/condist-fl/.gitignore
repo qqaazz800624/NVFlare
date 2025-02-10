@@ -2,3 +2,5 @@ infer*
 condist*
 labels
 AMOS22*
+*.json
+*.csv

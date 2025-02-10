@@ -109,7 +109,7 @@ data_root = f"/neodata/open_dataset/ConDistFL/data/{data_dir}"
 data_list = f"/neodata/open_dataset/ConDistFL/data/{data_dir}/datalist.json"
 
 methods = ['GA', 'ConDist']
-clients = ['kidney', 'liver', 'pancreas', 'spleen']
+clients = ['kidney', 'liver', 'pancreas', 'spleen', 'global']
 
 for method in methods:
     
@@ -123,9 +123,9 @@ for method in methods:
 
     dataset = LabelDataset(data_root, data_list, "testing")
 
-    dice_scores = []
 
     for client in clients:
+        dice_scores = []
         for data in tqdm(dataset):
             number = extract_number_from_filename(data)
             filename = f"IM_{data_prefix}_{number}_{client}.nii.gz"
@@ -141,62 +141,62 @@ for method in methods:
 
             dice_scores.append(dice_score)
 
-    save_dir = os.path.join(home_dir, "dice_scores.json")
+        save_dir = os.path.join(home_dir, f"dice_scores_{target}_{client}.json")
 
-    with open(save_dir, "w") as f:
-        json.dump(dice_scores, f)
+        with open(save_dir, "w") as f:
+            json.dump(dice_scores, f)
 
     print(f"Finished computing dice scores for {method} method.")
 #%%
 
-import json 
-import numpy as np
+# import json 
+# import numpy as np
 
-with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/infer_GA/dice_scores.json", "r") as f:
-    dice_scores_GA = json.load(f)
+# with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/infer_GA/dice_scores.json", "r") as f:
+#     dice_scores_GA = json.load(f)
 
-with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/infer/dice_scores.json", "r") as f:
-    dice_scores = json.load(f)
+# with open("/home/u/qqaazz800624/NVFlare/research/condist-fl/infer/dice_scores.json", "r") as f:
+#     dice_scores = json.load(f)
 
 
-print("The mean of GA method:", np.round(np.mean(dice_scores_GA), 4))
-print("The mean of Non-GA method:", np.round(np.mean(dice_scores), 4))
+# print("The mean of GA method:", np.round(np.mean(dice_scores_GA), 4))
+# print("The mean of Non-GA method:", np.round(np.mean(dice_scores), 4))
 
-#%%
+# #%%
 
-import numpy as np
-from scipy import stats
+# import numpy as np
+# from scipy import stats
 
-differences = np.array(dice_scores_GA) - np.array(dice_scores)
+# differences = np.array(dice_scores_GA) - np.array(dice_scores)
 
-# Check the normality with Shapiro-Wilk test
-w, p_value = stats.shapiro(differences)
-print("p-value of Shapiro-Wilk test", p_value)
+# # Check the normality with Shapiro-Wilk test
+# w, p_value = stats.shapiro(differences)
+# print("p-value of Shapiro-Wilk test", p_value)
 
-# check the normality
-alpha = 0.05
-if p_value > alpha:
-    print("Cannot reject the null hypothesis (normality is not rejected).")
-else:
-    print("Reject the null hypothesis (normality is rejected).")
+# # check the normality
+# alpha = 0.05
+# if p_value > alpha:
+#     print("Cannot reject the null hypothesis (normality is not rejected).")
+# else:
+#     print("Reject the null hypothesis (normality is rejected).")
 
-#%%
+# #%%
 
-# Wilcoxon signed-rank test
+# # Wilcoxon signed-rank test
 
-stat, p_value = stats.wilcoxon(dice_scores_GA, dice_scores, alternative='greater')
+# stat, p_value = stats.wilcoxon(dice_scores_GA, dice_scores, alternative='greater')
 
-print("p-value of Wilcoxon signed-rank test", p_value)
-print("statistic of Wilcoxon signed-rank test", stat)
+# print("p-value of Wilcoxon signed-rank test", p_value)
+# print("statistic of Wilcoxon signed-rank test", stat)
 
-alpha = 0.05
+# alpha = 0.05
 
-if p_value < alpha:
-    print("Reject the null hypothesis.")
-    print("The GA method is statistically significantly better than the Non-GA method.")
-else:
-    print("Cannot reject the null hypothesis.")
-    print("The GA method is not statistically significantly better than the Non-GA method.")
+# if p_value < alpha:
+#     print("Reject the null hypothesis.")
+#     print("The GA method is statistically significantly better than the Non-GA method.")
+# else:
+#     print("Cannot reject the null hypothesis.")
+#     print("The GA method is not statistically significantly better than the Non-GA method.")
 
 #%%
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set default CUDA device
-DEFAULT_CUDA_DEVICE="1"   # 0, 1, 2, 3
+DEFAULT_CUDA_DEVICE="0"   # 0, 1, 2, 3
 
 # allow overriding the default CUDA device with a command-line argument
 CUDA_DEVICE=${2:-$DEFAULT_CUDA_DEVICE}
@@ -9,13 +9,13 @@ CUDA_DEVICE=${2:-$DEFAULT_CUDA_DEVICE}
 export CUDA_VISIBLE_DEVICES=${CUDA_DEVICE}
 
 # set default directory for data
-DEFAULT_DATA_ROOT="Pancreas"  # Pancreas, Liver, KiTS19, Spleen
+DEFAULT_DATA_ROOT="KiTS19"  # Pancreas, Liver, KiTS19, Spleen
 
 # allow overriding the default data directory with a command-line argument
 DATA_ROOT=${3:-$DEFAULT_DATA_ROOT}
 
 # set default model name to evaluate
-DEFAULT_MODEL_NAME="pancreas"   # kidney, liver, pancreas, spleen, global
+DEFAULT_MODEL_NAME="global"   # kidney, liver, pancreas, spleen, global
 
 # allow overriding the default model name with a command-line argument
 MODEL_NAME=${1:-$DEFAULT_MODEL_NAME}
@@ -27,7 +27,7 @@ python run_infer_task.py \
   --data_list_key testing \
   --model best_${MODEL_NAME}_model.pt \
   --output infer \
-  --model_type MedNeXt \
+  --model_type nnUNet \
   --client_name "${MODEL_NAME}"
 
 python run_infer_task.py \
@@ -36,5 +36,5 @@ python run_infer_task.py \
   --data_list_key testing \
   --model best_${MODEL_NAME}_model_GA.pt \
   --output infer_GA \
-  --model_type MedNeXt \
+  --model_type nnUNet \
   --client_name "${MODEL_NAME}"
