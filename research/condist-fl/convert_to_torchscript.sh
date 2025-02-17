@@ -21,32 +21,44 @@ shift 2
 if [ "$SITE" = "server" ]; then
   echo "Processing server checkpoint"
 
-  # For server checkpoint
-  python convert_to_torchscript.py \
-    --config workspace_nnUNet_hessian/simulate_job/app_${SITE}/config/config_fed_server.json \
-    --weights workspace_nnUNet_hessian/simulate_job/app_${SITE}/best_FL_global_model.pt \
-    --app "$SITE" \
-    --output best_global_model.pt "$@"  
+  #For server checkpoint
+  # python convert_to_torchscript.py \
+  #   --config workspace_mednext_225/simulate_job/app_${SITE}/config/config_fed_server.json \
+  #   --weights workspace_mednext_225/simulate_job/app_${SITE}/best_FL_global_model.pt \
+  #   --app "$SITE" \
+  #   --output best_global_model.pt "$@"  
 
   python convert_to_torchscript.py \
-  --config workspace_GA_nnUNet_hessian/simulate_job/app_${SITE}/config/config_fed_server.json \
-  --weights workspace_GA_nnUNet_hessian/simulate_job/app_${SITE}/best_FL_global_model.pt \
-  --app "$SITE" \
-  --output best_global_model_GA.pt "$@"
+    --config workspace_GA_mednext_225/simulate_job/app_${SITE}/config/config_fed_server.json \
+    --weights workspace_GA_mednext_225/simulate_job/app_${SITE}/best_FL_global_model.pt \
+    --app "$SITE" \
+    --output best_global_model_GA.pt "$@"
+
+  # python convert_to_torchscript.py \
+  #   --config workspace_GA_mednext_identity/simulate_job/app_${SITE}/config/config_fed_server.json \
+  #   --weights workspace_GA_mednext_identity/simulate_job/app_${SITE}/best_FL_global_model.pt \
+  #   --app "$SITE" \
+  #   --output best_global_model_GA_identity.pt "$@"
 
 else
   echo "Processing client checkpoint"
 
   # For client checkpoint
-  python convert_to_torchscript.py \
-    --config workspace_nnUNet_hessian/simulate_job/app_${SITE}/config/config_task.json \
-    --weights workspace_nnUNet_hessian/simulate_job/app_${SITE}/models/best_model.pt \
-    --app "$SITE" \
-    --output best_${SITE}_model.pt "$@"
+  # python convert_to_torchscript.py \
+  #   --config workspace_mednext_225/simulate_job/app_${SITE}/config/config_task.json \
+  #   --weights workspace_mednext_225/simulate_job/app_${SITE}/models/best_model.pt \
+  #   --app "$SITE" \
+  #   --output best_${SITE}_model.pt "$@"
 
   python convert_to_torchscript.py \
-    --config workspace_GA_nnUNet_hessian/simulate_job/app_${SITE}/config/config_task.json \
-    --weights workspace_GA_nnUNet_hessian/simulate_job/app_${SITE}/models/best_model.pt \
+    --config workspace_GA_mednext_225/simulate_job/app_${SITE}/config/config_task.json \
+    --weights workspace_GA_mednext_225/simulate_job/app_${SITE}/models/best_model.pt \
     --app "$SITE" \
     --output best_${SITE}_model_GA.pt "$@"
+
+  # python convert_to_torchscript.py \
+  #   --config workspace_GA_mednext_identity/simulate_job/app_${SITE}/config/config_task.json \
+  #   --weights workspace_GA_mednext_identity/simulate_job/app_${SITE}/models/best_model.pt \
+  #   --app "$SITE" \
+  #   --output best_${SITE}_model_GA_identity.pt "$@"
 fi

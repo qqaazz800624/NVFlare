@@ -65,6 +65,7 @@ class GeneralizationAdjustmentAggregator(Aggregator):
 
         # Calculate value_list as the generalization gap received from clients
         value_list = np.array([self.generalization_gaps[site_name] for site_name in self.generalization_gaps.keys()])
+        self.log_info(fl_ctx, f"Generalization Gaps: {value_list}")
 
         # Compute the mean of the generalization gaps
         mean_generalization_gap = np.mean(value_list)

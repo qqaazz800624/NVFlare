@@ -2,7 +2,7 @@
 
 # Default CUDA device and model name
 DEFAULT_CUDA_DEVICE="0"           # Available options: 0, 1, 2, 3
-DEFAULT_MODEL_NAME="spleen"       # Available options: kidney, liver, pancreas, spleen, global
+DEFAULT_MODEL_NAME="global"       # Available options: kidney, liver, pancreas, spleen, global
 
 # Parse arguments: model name and CUDA device
 MODEL_NAME=${1:-$DEFAULT_MODEL_NAME}   # First argument: model name

@@ -27,6 +27,7 @@ from trainer import ConDistTrainer, Trainer
 from utils.get_model import get_model
 from utils.model_weights import extract_weights, load_weights
 from validator import Validator
+from validator_GA_loss import Validator_loss
 
 from nvflare.apis.dxo import DXO, DataKind, MetaKey, from_shareable
 from nvflare.apis.fl_constant import FLContextKey
@@ -43,7 +44,7 @@ class NonConDistLearner(Learner):
         task_config: str,
         data_config: str,
         aggregation_steps: int,
-        method: Literal["ConDist"] = "ConDist",
+        method: Literal["NonConDist"] = "NonConDist",
         seed: Optional[int] = None,
         max_retry: int = 1,
         train_task_name: str = AppConstants.TASK_TRAIN,
@@ -86,12 +87,11 @@ class NonConDistLearner(Learner):
         self.model = get_model(task_config["model"])
 
         # Configure trainer & validator
-        if self._method == "ConDist":
-            self.trainer = ConDistTrainer(task_config)
-        else:
+        if self._method == "NonConDist":
             self.trainer = Trainer(task_config)
             
         self.validator = Validator(task_config)
+        self.validator_loss = Validator_loss(task_config)
 
         # Create logger
         self.tb_logger = SummaryWriter(log_dir=prefix / "logs")
@@ -113,6 +113,34 @@ class NonConDistLearner(Learner):
         if self.dm.get_data_loader("validate") is None:
             self.dm.setup("validate")
 
+        # Before local training, calculate generalization gap
+        if global_weights:
+            load_weights(self.global_model, global_weights)
+            self.global_model = self.global_model.to("cuda:0")
+            #global_model_current_metrics = self.validator_loss.run(self.global_model, self.dm.get_data_loader("train"))
+            global_model_current_metrics = self.validator_loss.run(self.global_model, self.dm.get_data_loader("train"), global_model=self.global_model, current_round=self.current_round)
+            #global_model_current_metrics = self.validator.run(model=self.global_model, data_loader=self.dm.get_data_loader("train"))
+
+            if self.prev_local_model:
+                self.prev_local_model = self.prev_local_model.to("cuda:0")
+                #local_model_prev_metrics = self.validator_loss.run(self.prev_local_model, self.dm.get_data_loader("train"))
+                local_model_prev_metrics = self.validator_loss.run(self.prev_local_model, self.dm.get_data_loader("train"), global_model=self.global_model, current_round=self.current_round)
+                #local_model_prev_metrics = self.validator.run(model=self.prev_local_model, data_loader=self.dm.get_data_loader("train"))
+            else:
+                local_model_prev_metrics = global_model_current_metrics
+            
+            # loss_global = (1 - global_model_current_metrics[self.key_metric])
+            # loss_local = (1 - local_model_prev_metrics[self.key_metric])
+            loss_global = global_model_current_metrics[self.loss_metric] 
+            loss_local = local_model_prev_metrics[self.loss_metric] 
+
+            generalization_gap = loss_global - loss_local
+        else:
+            generalization_gap = 0.0
+
+        self.tb_logger.add_scalar("generalization_gap", generalization_gap, self.current_round)
+
+        
         # Run training
         for i in range(self._max_retry + 1):
             try:

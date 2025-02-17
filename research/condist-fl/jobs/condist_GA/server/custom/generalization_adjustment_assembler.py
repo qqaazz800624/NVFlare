@@ -31,6 +31,10 @@ class GeneralizationAdjustmentAssembler(Assembler):
         else:
             # Perform Generalization Adjustment starting from round 1
             generalization_gaps = np.array([info["generalization_gap"] for info in data.values()])
+            generalization_gaps_dict = {site_name: info["generalization_gap"] for site_name, info in data.items()}
+            self.log_info(fl_ctx, f"Generalization Gaps: {generalization_gaps_dict}")
+            #self.log_info(fl_ctx, f"Generalization Gaps: {generalization_gaps}")
+            
             mean_generalization_gap = np.mean(generalization_gaps)
             centralized_gaps = generalization_gaps - mean_generalization_gap
 
