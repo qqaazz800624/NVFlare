@@ -11,12 +11,12 @@ import numpy as np
 from data import DataManager
 from prettytable import PrettyTable
 from torch.utils.tensorboard import SummaryWriter
-from trainer import ConDistTrainer, ConDistEvidentialTrainer, Trainer
+from trainer import ConDistTrainer
 from utils.get_model import get_model
 from utils.model_weights import extract_weights, load_weights
 #from validator import Validator
 from validator_GA import Validator
-from validator_GA_loss import Validator_loss
+#from validator_GA_loss import Validator_loss
 
 from nvflare.apis.dxo import DXO, DataKind, MetaKey, from_shareable
 from nvflare.apis.fl_constant import FLContextKey
@@ -86,7 +86,7 @@ class ConDistLearner(Learner):
         #     self.trainer = Trainer(task_config)  # Non-ConDist trainer
             
         self.validator = Validator(task_config)
-        self.validator_loss = Validator_loss(task_config)
+        #self.validator_loss = Validator_loss(task_config)
 
         # Create logger
         self.tb_logger = SummaryWriter(log_dir=prefix / "logs")
@@ -113,21 +113,21 @@ class ConDistLearner(Learner):
             load_weights(self.global_model, global_weights)
             self.global_model = self.global_model.to("cuda:0")
             #global_model_current_metrics = self.validator_loss.run(self.global_model, self.dm.get_data_loader("train"))
-            global_model_current_metrics = self.validator_loss.run(self.global_model, self.dm.get_data_loader("train"), global_model=self.global_model, current_round=self.current_round)
-            #global_model_current_metrics = self.validator.run(model=self.global_model, data_loader=self.dm.get_data_loader("train"))
+            #global_model_current_metrics = self.validator_loss.run(self.global_model, self.dm.get_data_loader("train"), global_model=self.global_model, current_round=self.current_round)
+            global_model_current_metrics = self.validator.run(model=self.global_model, data_loader=self.dm.get_data_loader("train"))
 
             if self.prev_local_model:
                 self.prev_local_model = self.prev_local_model.to("cuda:0")
                 #local_model_prev_metrics = self.validator_loss.run(self.prev_local_model, self.dm.get_data_loader("train"))
-                local_model_prev_metrics = self.validator_loss.run(self.prev_local_model, self.dm.get_data_loader("train"), global_model=self.global_model, current_round=self.current_round)
-                #local_model_prev_metrics = self.validator.run(model=self.prev_local_model, data_loader=self.dm.get_data_loader("train"))
+                #local_model_prev_metrics = self.validator_loss.run(self.prev_local_model, self.dm.get_data_loader("train"), global_model=self.global_model, current_round=self.current_round)
+                local_model_prev_metrics = self.validator.run(model=self.prev_local_model, data_loader=self.dm.get_data_loader("train"))
             else:
                 local_model_prev_metrics = global_model_current_metrics
             
-            # loss_global = (1 - global_model_current_metrics[self.key_metric])
-            # loss_local = (1 - local_model_prev_metrics[self.key_metric])
-            loss_global = global_model_current_metrics[self.loss_metric] 
-            loss_local = local_model_prev_metrics[self.loss_metric] 
+            loss_global = (1 - global_model_current_metrics[self.key_metric])
+            loss_local = (1 - local_model_prev_metrics[self.key_metric])
+            # loss_global = global_model_current_metrics[self.loss_metric] 
+            # loss_local = local_model_prev_metrics[self.loss_metric] 
 
             generalization_gap = loss_global - loss_local
         else:
@@ -288,7 +288,7 @@ class ConDistLearner(Learner):
             try:
                 data_loader = self.dm.get_data_loader(phase)
                 raw_metrics = self.validator.run(self.model, data_loader)
-                raw_loss = self.validator_loss.run(self.model, data_loader, global_model=self.global_model, current_round=self.current_round)
+                #raw_loss = self.validator_loss.run(self.model, data_loader, global_model=self.global_model, current_round=self.current_round)
                 break
             except Exception as e:
                 if i < self._max_retry:
@@ -308,10 +308,10 @@ class ConDistLearner(Learner):
             f"Validation metrics of {model_owner}'s model on" f" {fl_ctx.get_identity_name()}'s data: {raw_metrics}",
             
         )
-        self.log_info(
-            fl_ctx,
-            f"Validation loss of {model_owner}'s model on" f" {fl_ctx.get_identity_name()}'s data: {raw_loss}",
-        )
+        # self.log_info(
+        #     fl_ctx,
+        #     f"Validation loss of {model_owner}'s model on" f" {fl_ctx.get_identity_name()}'s data: {raw_loss}",
+        # )
 
         # For validation before training, only key metric is needed
         if validate_type == ValidateType.BEFORE_TRAIN_VALIDATE:

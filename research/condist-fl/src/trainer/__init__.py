@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__all__ = ["Trainer", "ConDistTrainer", "ConDistEvidentialTrainer"]
+__all__ = ["Trainer", "ConDistTrainer"]
 
 from .condist import ConDistTrainer
-from .condist_evidential import ConDistEvidentialTrainer
 from .trainer import Trainer
