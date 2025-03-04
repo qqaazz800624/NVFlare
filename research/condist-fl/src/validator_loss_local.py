@@ -78,7 +78,7 @@ class Validator_loss_local(object):
         #marginal_evidential_loss = self.evidential_loss_fn(batch["preds"], batch["label"], current_round)
         #masked_evidential_loss = self.masked_evidential_loss_fn(batch["preds"], batch["label"])
         self.update_condist_weight(current_round)
-        loss = marginal_loss - self.weight * condist_loss
+        loss = marginal_loss + self.weight * condist_loss
         self.losses.append(loss.detach().cpu())
 
 

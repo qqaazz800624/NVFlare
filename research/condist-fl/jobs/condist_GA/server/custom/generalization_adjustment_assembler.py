@@ -79,7 +79,8 @@ class GeneralizationAdjustmentAssembler(Assembler):
             '''
             self.temperature = (1-current_round/(2*total_rounds))
             weight_list = [self.aggregation_weights[site_name] for site_name in data.keys()]
-            exp_weights = np.exp(weight_list/self.temperature)
+            weight_array = np.array(weight_list)
+            exp_weights = np.exp(weight_array/self.temperature)
             softmax_weights = exp_weights / np.sum(exp_weights)
 
             for i, site_name in enumerate(data.keys()):

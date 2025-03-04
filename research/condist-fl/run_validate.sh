@@ -10,5 +10,5 @@ CUDA_DEVICE=${1:-$DEFAULT_CUDA_DEVICE}
 export CUDA_VISIBLE_DEVICES=$CUDA_DEVICE
 
 python run_validate.py \
-     -w workspace_non_ConDist_GA_mednext \
-     -o cross_site_validate_non_ConDist_GA_mednext.json $@
+     -w workspace_mednext_225 \
+     -o cross_site_validate_mednext.json $@

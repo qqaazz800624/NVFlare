@@ -9,13 +9,13 @@ CUDA_DEVICE=${2:-$DEFAULT_CUDA_DEVICE}
 export CUDA_VISIBLE_DEVICES=${CUDA_DEVICE}
 
 # set default directory for data
-DEFAULT_DATA_ROOT="Liver"  # KiTS19, Liver, Pancreas, Spleen
+DEFAULT_DATA_ROOT="Spleen"  # KiTS19, Liver, Pancreas, Spleen
 
 # allow overriding the default data directory with a command-line argument
 DATA_ROOT=${3:-$DEFAULT_DATA_ROOT}
 
 # set default model name to evaluate
-DEFAULT_MODEL_NAME="kidney"   # kidney, liver, pancreas, spleen, global
+DEFAULT_MODEL_NAME="spleen"   # kidney, liver, pancreas, spleen, global
 
 # allow overriding the default model name with a command-line argument
 MODEL_NAME=${1:-$DEFAULT_MODEL_NAME}
