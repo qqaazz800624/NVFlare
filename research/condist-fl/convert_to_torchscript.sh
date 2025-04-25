@@ -29,8 +29,8 @@ if [ "$SITE" = "server" ]; then
   #   --output best_global_model.pt "$@"  
 
   python convert_to_torchscript.py \
-    --config workspace_GA_mednext_test/simulate_job/app_${SITE}/config/config_fed_server.json \
-    --weights workspace_GA_mednext_test/simulate_job/app_${SITE}/best_FL_global_model.pt \
+    --config workspace_GA_mednext_identity/simulate_job/app_${SITE}/config/config_fed_server.json \
+    --weights workspace_GA_mednext_identity/simulate_job/app_${SITE}/best_FL_global_model.pt \
     --app "$SITE" \
     --output best_global_model_GA.pt "$@"
 
@@ -45,8 +45,8 @@ else
   #   --output best_${SITE}_model.pt "$@"
 
   python convert_to_torchscript.py \
-    --config workspace_GA_mednext_test/simulate_job/app_${SITE}/config/config_task.json \
-    --weights workspace_GA_mednext_test/simulate_job/app_${SITE}/models/best_model.pt \
+    --config workspace_GA_mednext_identity/simulate_job/app_${SITE}/config/config_task.json \
+    --weights workspace_GA_mednext_identity/simulate_job/app_${SITE}/models/best_model.pt \
     --app "$SITE" \
     --output best_${SITE}_model_GA.pt "$@"
 

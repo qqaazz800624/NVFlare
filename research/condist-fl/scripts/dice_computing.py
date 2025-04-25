@@ -102,7 +102,7 @@ def dice_compute(seg_mask, label):
     return dice_score
 
 #%%
-target = 'spleen'
+target = 'spleen'  # liver, liver_tumor, spleen, pancreas, pancreas_tumor, kidney, kidney_tumor
 
 data_dir = data_dir_dict[target]
 data_root = f"/neodata/open_dataset/ConDistFL/data/{data_dir}"
